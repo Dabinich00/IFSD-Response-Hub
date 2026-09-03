@@ -11,13 +11,13 @@ const fields=[
  {key:'customer',label:'Customer',required:true},
  {key:'aircraftId',label:'Aircraft ID',required:true},
  {key:'aircraftLocation',label:'Aircraft Location',required:true},
+ {key:'priority',label:'Priority',type:'priority',required:true},
  {key:'eventTime',label:'Event Time',required:true},
  {key:'requestedDepartureDate',label:'Requested Departure Date',required:true},
  {key:'engine1',label:'Engine 1 Number',required:true},
  {key:'engine2',label:'Engine 2 Number',required:true},
  {key:'problemNotes',label:'Problem / Notes',type:'textarea',required:true},
- {key:'assistantSuggestions',label:'Assistant Suggestions',type:'textarea'},
- {key:'priority',label:'Priority',type:'priority',required:true}
+ {key:'assistantSuggestions',label:'Assistant Suggestions',type:'textarea'}
 ];
 const priorityLevels=['','1 - Most urgent','2 - Urgent','3 - Medium','4 - Low','5 - Lowest'];
 
