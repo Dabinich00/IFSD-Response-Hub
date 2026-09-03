@@ -66,7 +66,9 @@ main{max-width:1120px;padding:26px 22px 42px}
 .case-data{border-top:1px solid var(--line);background:#fff;color:var(--ink);font-size:16px}
 .case-data span:nth-child(2),.case-data span:nth-child(6){color:var(--navy);font-weight:800}
 .level-pill{background:var(--danger);box-shadow:0 0 0 5px #e14f5514}
+.level-pill.review{background:#e2a735;box-shadow:0 0 0 5px #e2a73518}
 .demo-label{display:flex;align-items:center;gap:9px;border:0;border-top:1px solid var(--line);background:#fbfcfd;color:var(--muted)}
+.demo-label strong{color:#087b78;font-size:11px}
 .demo-label span{padding:3px 7px;border-radius:5px;background:#fff1cf;color:#876318;font-size:9px;font-weight:900;letter-spacing:1px}
 .dashboard-grid{gap:14px;padding:16px;background:#f7f9fb}
 .dashboard-tile{min-height:168px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:0 7px 22px #17384e0b;transition:transform .18s ease,box-shadow .18s ease}
