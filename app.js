@@ -5,6 +5,53 @@ let missingItems=[];
 function show(id){views.forEach(v=>v.classList.remove('active'));nav.forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');nav.find(b=>b.dataset.view===id)?.classList.add('active')}
 nav.forEach(b=>b.onclick=()=>show(b.dataset.view));
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active')});
+
+let mediaRecorder=null;
+let audioChunks=[];
+let recordingStartedAt=0;
+let recordingTimerId=null;
+const startRecordingButton=document.getElementById('startRecording');
+const stopRecordingButton=document.getElementById('stopRecording');
+
+function setRecorderStatus(message,state='idle'){
+ const status=document.getElementById('recorderStatus');status.textContent=message;status.dataset.state=state;
+}
+
+function updateRecordingTimer(){
+ const seconds=Math.floor((Date.now()-recordingStartedAt)/1000);
+ document.getElementById('recordingTimer').textContent=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
+}
+
+startRecordingButton.onclick=async()=>{
+ if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){setRecorderStatus('Browser unterstützt keine Aufnahme','error');return;}
+ try{
+  const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+  const preferredType=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
+  mediaRecorder=new MediaRecorder(stream,preferredType?{mimeType:preferredType}:undefined);audioChunks=[];
+  mediaRecorder.ondataavailable=event=>{if(event.data.size)audioChunks.push(event.data)};
+  mediaRecorder.onstop=()=>transcribeRecording(stream);
+  mediaRecorder.start();recordingStartedAt=Date.now();updateRecordingTimer();recordingTimerId=setInterval(updateRecordingTimer,500);
+  startRecordingButton.disabled=true;stopRecordingButton.disabled=false;setRecorderStatus('Aufnahme läuft','recording');
+ }catch(error){setRecorderStatus(error.name==='NotAllowedError'?'Mikrofon nicht freigegeben':'Aufnahme nicht möglich','error');}
+};
+
+stopRecordingButton.onclick=()=>{
+ if(mediaRecorder?.state==='recording'){mediaRecorder.stop();clearInterval(recordingTimerId);stopRecordingButton.disabled=true;setRecorderStatus('Transkription läuft …','working');}
+};
+
+async function transcribeRecording(stream){
+ stream.getTracks().forEach(track=>track.stop());
+ try{
+  const audioBlob=new Blob(audioChunks,{type:mediaRecorder.mimeType||'audio/webm'});
+  const language=document.getElementById('transcriptionLanguage').value;
+  const response=await fetch(`/api/transcribe${language?`?language=${language}`:''}`,{method:'POST',headers:{'Content-Type':audioBlob.type},body:audioBlob});
+  const result=await response.json();
+  if(!response.ok)throw new Error(result.error||'Transkription fehlgeschlagen');
+  document.getElementById('sourceText').value=result.text;
+  setRecorderStatus(`Fertig · ${result.language||'auto'}`,'success');
+ }catch(error){setRecorderStatus(error.message.includes('Failed to fetch')?'Lokaler Whisper-Server nicht erreichbar':error.message,'error');}
+ finally{startRecordingButton.disabled=false;mediaRecorder=null;audioChunks=[];}
+}
 document.getElementById('extract').onclick=()=>{
  const t=document.getElementById('sourceText').value;
  const m=(r,f='nicht erkannt')=>(t.match(r)||[])[1]||f;

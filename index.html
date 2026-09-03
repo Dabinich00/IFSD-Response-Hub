@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header><h1>IFSD Response Hub</h1><p>Team 3 – In-Flight Shutdown · Prototype v0.1</p></header>
+<header><h1>IFSD Response Hub</h1><p>Team 3 – In-Flight Shutdown · Prototype v0.2</p></header>
 <nav>
 <button data-view="dashboard" class="active">Dashboard</button>
 <button data-view="intake">1 · Intelligent Incident Intake</button>
@@ -85,6 +85,25 @@
   <div class="two">
     <article>
       <div class="tabs"><button class="active">Telefon / Speech-to-Text</button><button>E-Mail / Text</button></div>
+      <section class="recorder" aria-labelledby="recorderTitle">
+        <div class="recorder-heading">
+          <div><small>Local AI transcription</small><strong id="recorderTitle">faster-whisper</strong></div>
+          <span id="recorderStatus" class="recorder-status" data-state="idle">Bereit</span>
+        </div>
+        <div class="recorder-controls">
+          <button id="startRecording" type="button">● Aufnahme starten</button>
+          <button id="stopRecording" type="button" disabled>■ Stoppen & transkribieren</button>
+          <label>Sprache
+            <select id="transcriptionLanguage">
+              <option value="">Automatisch</option>
+              <option value="de">Deutsch</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <output id="recordingTimer">00:00</output>
+        </div>
+        <p class="recorder-note">Audio wird nur an den lokal gestarteten Whisper-Dienst übertragen.</p>
+      </section>
       <label>Eingehende Information</label>
       <textarea id="sourceText">Pilot meldet Engine Shutdown auf Flug LH412 von New York nach Frankfurt. Boeing 787-9, Trent 1000. Ereignis um 09:42 UTC in FL350 über dem Nordatlantik. Crew meldete vorher erhöhte Vibrationen und EGT-Anstieg. Engine 2 wurde abgeschaltet. Flug wird nach Shannon umgeleitet. Keine Verletzten. Ölstand und detaillierte EHM-Daten liegen aktuell noch nicht vor.</textarea>
       <button id="extract">Case automatisch erstellen</button>
