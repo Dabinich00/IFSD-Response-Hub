@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IFSD Response Hub</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header><h1>IFSD Response Hub</h1><p>Team 3 – In-Flight Shutdown · Prototype v0.1</p></header>
+<nav>
+<button data-view="dashboard" class="active">Dashboard</button>
+<button data-view="intake">1 · Intelligent Incident Intake</button>
+<button data-view="response">2 · Incident Response & Resource Intelligence</button>
+</nav>
+
+<main>
+<section id="dashboard" class="view active">
+  <h2>Leitfrage</h2>
+  <p class="lead">Wie können kritische Ereignisse so erfasst werden, dass schnell wertvolle Erkenntnisse entstehen?</p>
+  <div class="flow"><span>Telefon / E-Mail</span>→<span>strukturierter Case</span>→<span>Analyse + Ressourcen</span>→<span>Mensch entscheidet</span></div>
+  <div class="cards">
+    <article><b>Offene Cases</b><strong>3</strong><small>1 kritisch</small></article>
+    <article><b>Datenvollständigkeit</b><strong>82%</strong><small>Demo-Case</small></article>
+    <article><b>Automatisch übernommen</b><strong>11</strong><small>Felder</small></article>
+    <article><b>Fehlende Pflichtfelder</b><strong class="red">3</strong><small>Rückfrage nötig</small></article>
+  </div>
+</section>
+
+<section id="intake" class="view">
+  <h2>1 · Intelligent Incident Intake</h2>
+  <p>Telefon und E-Mail werden in dieselbe strukturierte Case-Logik überführt.</p>
+  <div class="two">
+    <article>
+      <div class="tabs"><button class="active">Telefon / Speech-to-Text</button><button>E-Mail / Text</button></div>
+      <label>Eingehende Information</label>
+      <textarea id="sourceText">Pilot meldet Engine Shutdown auf Flug LH412 von New York nach Frankfurt. Boeing 787-9, Trent 1000. Ereignis um 09:42 UTC in FL350 über dem Nordatlantik. Crew meldete vorher erhöhte Vibrationen und EGT-Anstieg. Engine 2 wurde abgeschaltet. Flug wird nach Shannon umgeleitet. Keine Verletzten. Ölstand und detaillierte EHM-Daten liegen aktuell noch nicht vor.</textarea>
+      <button id="extract">Case automatisch erstellen</button>
+    </article>
+    <article>
+      <h3>Strukturierter Case</h3>
+      <div id="fields" class="fields"></div>
+      <h3>Fehlende Informationen</h3>
+      <div id="missing">Noch keine Extraktion.</div>
+      <button id="toResponse" disabled>Weiter zu Analyse & Ressourcen</button>
+    </article>
+  </div>
+</section>
+
+<section id="response" class="view">
+  <h2>2 · Incident Response & Resource Intelligence</h2>
+  <div class="cards three">
+    <article><b>EHM / Sensorik</b><p>EGT <span class="red">↑ 14%</span></p><p>Vibration <span class="red">hoch</span></p><p>Oil Pressure: normal*</p></article>
+    <article><b>Case Completeness</b><strong>82%</strong><p>Ölstand fehlt</p><p>EHM-Datensatz fehlt</p><p>Crew Statement unbestätigt</p></article>
+    <article><b>Ähnliche Fälle</b><p>2025-041 · 76%</p><p>2024-118 · 61%</p><p>2023-302 · 53%</p></article>
+  </div>
+  <div class="two">
+    <article>
+      <h3>Geo Resource Map</h3>
+      <div class="map">
+        <div class="event">! IFSD Event</div>
+        <div class="r1">● Shannon<br><small>2 Engineers · Parts</small></div>
+        <div class="r2">● London<br><small>4 Engineers</small></div>
+        <div class="r3">● Dahlewitz<br><small>Specialist Team</small></div>
+      </div>
+    </article>
+    <article>
+      <h3>Empfohlene Ressourcen</h3>
+      <p><b>Shannon Service Partner</b><br>ETA 35 min</p>
+      <p><b>RR Specialist – Trent 1000</b><br>Remote Support · sofort</p>
+      <p><b>Replacement Part Kit</b><br>Warehouse London · ETA 3h 20m</p>
+      <div class="note"><b>Human-in-the-loop</b><br>Das System strukturiert Daten und macht Vorschläge. Die sicherheitskritische Entscheidung bleibt beim autorisierten Experten.</div>
+    </article>
+  </div>
+</section>
+</main>
+
+<script src="app.js"></script>
+</body></html>

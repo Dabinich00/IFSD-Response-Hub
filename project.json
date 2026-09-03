@@ -1,0 +1,10 @@
+{
+  "project": "IFSD Response Hub",
+  "version": "0.1 handoff",
+  "team": "Team 3 – In-Flight Shutdown",
+  "core_features": [
+    "Intelligent Incident Intake",
+    "Incident Response & Resource Intelligence"
+  ],
+  "entrypoint": "index.html"
+}
