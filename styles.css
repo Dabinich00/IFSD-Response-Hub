@@ -5,3 +5,40 @@ body{margin:0;font-family:Arial,sans-serif;background:#f4f7f8;color:#17313b}head
 
 @media(max-width:900px){.dashboard-grid{grid-template-columns:1fr 1fr}.cards,.two,.three{grid-template-columns:1fr}.dashboard-head{border-radius:20px;padding:20px}.dashboard-head time{font-size:26px}.case-board{border-radius:22px}}
 @media(max-width:620px){main{padding:14px}.dashboard-head{align-items:flex-start;flex-direction:column;gap:10px}.dashboard-grid{grid-template-columns:1fr;padding:12px;gap:16px}.dashboard-tile{min-height:210px}.team-tile{margin-bottom:52px}nav{overflow-x:auto}header{padding:14px 18px}}
+
+/* Compact dashboard refinement */
+body{background:#eef3f4;color:#172f38}
+header{padding:12px 24px;background:#183f50}
+header h1{font-size:22px}
+header p{font-size:12px}
+nav{padding:8px 20px}
+nav button{padding:8px 12px;font-size:12px}
+main{max-width:1040px;padding:20px}
+#dashboard{font-family:Inter,Arial,sans-serif}
+.dashboard-head{padding:16px 22px;border:1px solid #315b60;border-radius:18px;background:linear-gradient(135deg,#9bcfd0,#7eb8ba);box-shadow:0 8px 22px #17313b14}
+.dashboard-head h2{font-size:36px;letter-spacing:-1px}
+.dashboard-head time{font-size:22px;font-weight:600;letter-spacing:.5px}
+.back-button{margin:6px 0;padding:6px 4px;font-size:22px;color:#244751}
+.case-board{border:1px solid #a7b9bd;border-radius:18px;background:#f8fafb;box-shadow:0 12px 30px #17313b12}
+.case-row{min-width:820px;grid-template-columns:.65fr .95fr 1.15fr 1.1fr .8fr 1.55fr .5fr}
+.case-header{padding:11px 12px;border-bottom:1px solid #9aadb1;background:#f4f7f8;font-size:14px;color:#4e666e;text-transform:uppercase;letter-spacing:.6px}
+.case-data{padding:18px 12px;background:#dbe3e5;font-size:17px;font-weight:600;color:#17313b}
+.level-pill{width:32px;height:32px;font-size:15px;box-shadow:0 3px 8px #8e272744}
+.demo-label{padding:7px 16px;border-color:#e4d29f;font-size:11px}
+.dashboard-grid{gap:14px;padding:14px}
+.dashboard-tile{min-height:160px;padding:14px;border:1px solid #62999d;border-radius:16px;background:linear-gradient(145deg,#9bcfd0,#83bbbd);box-shadow:0 6px 16px #17313b12}
+.dashboard-tile h3{margin-bottom:9px;font-size:24px;font-weight:650;letter-spacing:-.4px}
+.dashboard-tile p{margin:7px 0;font-size:16px;line-height:1.35}
+.engine-visual,.weather-map,.flight-map{height:110px;border-radius:8px}
+.engine-core{left:18%;top:25%;width:56px;height:56px}
+.engine-damage{right:20%;top:15%;width:38px;height:38px;font-size:23px}
+.cloud{width:72px;height:24px;box-shadow:18px -10px 0 #e8f2f4aa}
+.route-line{bottom:29px;border-top-width:3px}
+.weather-map b,.airport{font-size:11px}
+.team-tile{overflow:hidden;margin-bottom:0;padding-bottom:48px}
+.team-tile button{left:12px;right:12px;bottom:12px;padding:8px 10px;border:1px solid #315b60;border-radius:9px;background:#eef8f8;font-size:13px;color:#244751}
+.parts-tile p{font-size:22px;line-height:1.35}
+.plane{font-size:25px}
+
+@media(max-width:900px){main{max-width:720px}.dashboard-grid{grid-template-columns:1fr 1fr}.dashboard-head{padding:14px 18px}.dashboard-head h2{font-size:30px}.dashboard-head time{font-size:18px}}
+@media(max-width:620px){main{padding:10px}.dashboard-head{flex-direction:row;align-items:center}.dashboard-head h2{font-size:26px}.dashboard-head time{font-size:14px}.dashboard-grid{grid-template-columns:1fr;padding:10px;gap:10px}.dashboard-tile{min-height:145px}.case-board{border-radius:14px}}
