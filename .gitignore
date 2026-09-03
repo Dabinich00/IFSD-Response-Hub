@@ -3,6 +3,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
-.venv/
+.venv*/
 __pycache__/
 *.py[cod]
