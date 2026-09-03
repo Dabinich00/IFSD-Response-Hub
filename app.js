@@ -1,56 +1,148 @@
 const views=document.querySelectorAll('.view');const nav=[...document.querySelectorAll('nav button')];
 let currentCase=null;
+
 function show(id){views.forEach(v=>v.classList.remove('active'));nav.forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');nav.find(b=>b.dataset.view===id)?.classList.add('active')}
 nav.forEach(b=>b.onclick=()=>show(b.dataset.view));
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active')});
+document.querySelectorAll('.tabs button').forEach((b,index)=>{if(index===0)b.classList.add('active');b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active')}});
+
+const fields=[
+ {key:'caseId',label:'Case ID',readonly:true,required:true},
+ {key:'customer',label:'Customer',required:true},
+ {key:'aircraftId',label:'Aircraft ID',required:true},
+ {key:'aircraftLocation',label:'Aircraft Location',required:true},
+ {key:'eventTime',label:'Event Time',required:true},
+ {key:'requestedDepartureDate',label:'Requested Departure Date',required:true},
+ {key:'engine1',label:'Engine 1 Number',required:true},
+ {key:'engine2',label:'Engine 2 Number',required:true},
+ {key:'problemNotes',label:'Problem / Notes',type:'textarea',required:true},
+ {key:'priority',label:'Priority',required:true}
+];
+
 document.getElementById('extract').onclick=()=>{
- const t=document.getElementById('sourceText').value;
- const m=(r,f='nicht erkannt')=>(t.match(r)||[])[1]||f;
- const data={
-  'Case-ID':'IFSD-2026-0903-017',
-  'Priorität':/shutdown/i.test(t)?'CRITICAL':'REVIEW',
-  'Flugnummer':m(/\b([A-Z]{2}\d{2,4})\b/i),
-  'Flugzeug':m(/\b(Boeing\s+\d{3}(?:-\d+)?)\b/i),
-  'Triebwerk':m(/\b(Trent\s+\d{3,4})\b/i),
-  'Zeitpunkt':m(/\b(\d{1,2}:\d{2}\s*UTC)\b/i),
-  'Flughöhe':m(/\b(FL\d{2,3})\b/i),
-  'Ort':/Nordatlantik/i.test(t)?'Nordatlantik':'nicht erkannt',
-  'Route':'nicht erkannt',
-  'Kunde':m(/\b(LHA|Lufthansa|BA|British Airways|Emirates|Qatar Airways)\b/i,'nicht erkannt'),
-  'Problem':m(/\b(engine shutdown|in-flight shutdown|bird strike|smoke|fire|vibration(?:en)?)\b/i,'IFSD event')
- };
- const routeMatch=t.match(/von\s+([A-Za-zÄÖÜäöüß -]+?)\s+nach\s+([A-Za-zÄÖÜäöüß -]+?)(?:\.|,|$)/i);
- if(routeMatch)data.Route=`${routeMatch[1].trim()} → ${routeMatch[2].trim()}`;
- if(/^LH/i.test(data.Flugnummer))data.Kunde='LHA';
- if(/^BA/i.test(data.Flugnummer))data.Kunde='BA';
- document.getElementById('fields').innerHTML=Object.entries(data).map(([k,v])=>`<div class="field"><small>${k}</small><b>${v}</b></div>`).join('');
- const missing=['Ölstand / Oil-System-Informationen','vollständiger EHM-Datensatz','bestätigtes Crew Statement'];
- document.getElementById('missing').innerHTML=missing.map(x=>`<div class="miss">⚠ ${x}</div>`).join('');
+ const sourceText=document.getElementById('sourceText').value.trim();
+ const data=extractCase(sourceText);
  currentCase=data;
- syncDashboard(data,t);
+ renderCase(data);
+ renderAlerts(data,sourceText);
+ document.getElementById('originalText').value=sourceText||'No source text provided.';
+ document.getElementById('intake').classList.add('case-created');
+ syncDashboard(data,sourceText);
  document.getElementById('toResponse').disabled=false;
 };
-document.getElementById('toResponse').onclick=()=>show('response');
+
+function extractCase(text){
+ const m=(regex,fallback='')=>(text.match(regex)||[])[1]?.trim()||fallback;
+ const requestedDepartureDate=extractRequestedDeparture(text);
+ const customer=m(/\bCustomer:\s*([^\n\r]+)/i)||m(/\b(Lufthansa|British Airways|Emirates|Qatar Airways|LHA|BA)\b/i);
+ const aircraftLocation=extractAircraftLocation(text);
+ return {
+  caseId:'IFSD-2026-0903-017',
+  customer:normalizeCustomer(customer),
+  aircraftId:m(/\b(?:Aircraft ID|Aircraft|Registration|Tail(?: number)?):\s*([A-Z0-9-]{4,12})\b/i)||m(/\b([A-Z]-[A-Z0-9]{4}|N[0-9A-Z]{4,6}|G-[A-Z0-9]{4})\b/i),
+  aircraftLocation,
+  eventTime:extractEventDateTime(text),
+  requestedDepartureDate,
+  engine1:m(/\bEngine\s*1(?:\s*Number|\s*No\.?|\s*ID)?\s*:\s*([A-Z0-9-]{4,24})\b/i),
+  engine2:m(/\bEngine\s*2(?:\s*Number|\s*No\.?|\s*ID)?\s*:\s*([A-Z0-9-]{4,24})\b/i),
+  problemNotes:extractProblemNotes(text),
+  priority:calculatePriority(requestedDepartureDate)
+ };
+}
+
+function extractRequestedDeparture(text){
+ return mDate(/\b(?:depart(?:ure)? again|next departure|requested departure|ready for departure|return to service)\D{0,40}(\d{4}-\d{2}-\d{2}(?:\s+at\s+\d{1,2}:\d{2}\s*UTC)?)\b/i,text)
+  ||mDate(/\b(\d{4}-\d{2}-\d{2}(?:\s+at\s+\d{1,2}:\d{2}\s*UTC)?)\b/i,text);
+}
+
+function mDate(regex,text){return (text.match(regex)||[])[1]?.trim()||''}
+
+function extractEventDateTime(text){
+ const eventMatch=text.match(/\b(?:event|shutdown|reported|occurred)\D{0,60}(\d{4}-\d{2}-\d{2})\D{0,20}(\d{1,2}:\d{2}\s*UTC)\b/i);
+ if(eventMatch)return `${eventMatch[1]} ${eventMatch[2]}`;
+ return mDate(/\b(?:event|shutdown|reported|occurred)\D{0,60}(\d{1,2}:\d{2}\s*UTC)\b/i,text)
+  ||mDate(/\b(\d{1,2}:\d{2}\s*UTC)\b/i,text);
+}
+
+function extractAircraftLocation(text){
+ const diverted=(text.match(/\bdiverted to\s+([A-Za-z -]+?)(?:\.|,| and|$)/i)||[])[1];
+ const onGround=(text.match(/\b(?:on ground|located|currently)\s+(?:in|at|there\s*in)?\s*([A-Za-z -]+?)(?:\.|,| and|$)/i)||[])[1];
+ return (diverted||onGround||'').trim();
+}
+
+function normalizeCustomer(value){
+ const v=(value||'').trim();
+ if(/^LHA$/i.test(v))return 'Lufthansa';
+ if(/^BA$/i.test(v))return 'British Airways';
+ return v;
+}
+
+function extractProblemNotes(text){
+ const sentences=text.split(/(?<=[.!?])\s+/).filter(Boolean);
+ const relevant=sentences.filter(s=>/\b(shutdown|IFSD|vibration|EGT|oil|failure|failed|AOG|ground)\b/i.test(s));
+ return (relevant.slice(0,2).join(' ')||sentences[0]||'').trim();
+}
+
+function calculatePriority(requestedDepartureDate){
+ if(!requestedDepartureDate)return 'Pending';
+ const dateMatch=requestedDepartureDate.match(/\d{4}-\d{2}-\d{2}/);
+ if(!dateMatch)return 'Pending';
+ const requested=new Date(`${dateMatch[0]}T00:00:00`);
+ const today=new Date();
+ today.setHours(0,0,0,0);
+ const days=Math.round((requested-today)/86400000);
+ if(days<=1)return 'P1 - Immediate';
+ if(days<=7)return 'P2 - Urgent';
+ return 'P3 - Planned';
+}
+
+function renderCase(data){
+ document.getElementById('fields').innerHTML=fields.map(field=>fieldMarkup(field,data[field.key])).join('');
+ document.querySelectorAll('[data-case-field]').forEach(input=>{
+  input.oninput=()=>{
+   currentCase[input.dataset.caseField]=input.value;
+   if(input.dataset.caseField==='requestedDepartureDate'){
+    currentCase.priority=calculatePriority(input.value);
+    document.querySelector('[data-case-field="priority"]').value=currentCase.priority;
+   }
+   renderAlerts(currentCase,document.getElementById('originalText').value);
+   syncDashboard(currentCase,document.getElementById('originalText').value);
+  };
+ });
+}
+
+function fieldMarkup(field,value){
+ const safeValue=escapeHtml(value||'');
+ if(field.type==='textarea')return `<div class="field field-wide"><small>${field.label}${field.required?' *':''}</small><textarea data-case-field="${field.key}">${safeValue}</textarea></div>`;
+ return `<div class="field"><small>${field.label}${field.required?' *':''}</small><input data-case-field="${field.key}" value="${safeValue}" ${field.readonly?'readonly':''}></div>`;
+}
+
+function renderAlerts(data,sourceText){
+ const alerts=[];
+ fields.filter(field=>field.required).forEach(field=>{
+  if(!data[field.key]||data[field.key]==='Pending')alerts.push(`${field.label} missing`);
+ });
+ if(!data.requestedDepartureDate)alerts.push('Requested departure date missing - priority cannot be calculated');
+ alerts.push('Human review required before case submission');
+ document.getElementById('missing').innerHTML=alerts.map(alert=>`<div class="miss">⚠ ${escapeHtml(alert)}</div>`).join('');
+}
 
 function syncDashboard(data,sourceText){
- const text=(id,value)=>document.getElementById(id).textContent=value;
- const route=data.Route==='nicht erkannt'?(data.Ort==='nicht erkannt'?'Route offen':data.Ort):data.Route.replace(/\s+/g,' ').trim();
- const problem=data.Problem.replace(/\b\w/g,c=>c.toUpperCase());
- text('dashboardCase',data['Case-ID'].replace('IFSD-2026-',''));
- text('dashboardTrip',route);
- text('dashboardType',data.Triebwerk);
- text('dashboardCustomer',data.Kunde);
- text('dashboardProblem',problem);
- text('dashboardLevel',data.Priorität==='CRITICAL'?'1':'2');
- text('dashboardSyncStatus',`Synced from intake · ${data.Flugnummer}`);
+ const text=(id,value)=>document.getElementById(id).textContent=value||'Open';
+ const affectedEngine=/engine\s*1/i.test(data.problemNotes)?data.engine1||'Engine 1':/engine\s*2/i.test(data.problemNotes)?data.engine2||'Engine 2':'Engine open';
+ const problem=(data.problemNotes||'Case created').replace(/\b\w/g,c=>c.toUpperCase());
+ text('dashboardCase',data.caseId.replace('IFSD-2026-',''));
+ text('dashboardTrip',data.aircraftLocation||'Location open');
+ text('dashboardType',affectedEngine);
+ text('dashboardCustomer',data.customer);
+ text('dashboardProblem',problem.length>28?`${problem.slice(0,25)}...`:problem);
+ text('dashboardLevel',data.priority.startsWith('P1')?'1':data.priority.startsWith('P2')?'2':'3');
+ text('dashboardSyncStatus',`Synced from intake · ${data.aircraftId||'Aircraft ID open'}`);
  text('dashboardNotes',sourceText.length>150?`${sourceText.slice(0,147)}…`:sourceText);
- const cityCodes={'New York':'JFK','Frankfurt':'FRA','Berlin':'BER','München':'MUC','Munich':'MUC','Shannon':'SNN','Boston':'BOS'};
- if(data.Route!=='nicht erkannt'){
-  const [origin,destination]=data.Route.split('→').map(value=>value.trim());
-  document.querySelectorAll('.route-origin').forEach(element=>element.textContent=cityCodes[origin]||origin.slice(0,3).toUpperCase());
-  document.querySelectorAll('.route-destination').forEach(element=>element.textContent=cityCodes[destination]||destination.slice(0,3).toUpperCase());
- }
- document.getElementById('dashboardLevel').classList.toggle('review',data.Priorität!=='CRITICAL');
+ document.getElementById('dashboardLevel').classList.toggle('review',!data.priority.startsWith('P1'));
+}
+
+function escapeHtml(value){
+ return String(value).replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character]));
 }
 
 const dashboardClock=document.getElementById('dashboardClock');
