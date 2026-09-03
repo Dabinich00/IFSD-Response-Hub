@@ -65,9 +65,14 @@ class IFSDHandler(SimpleHTTPRequestHandler):
             if not text:
                 raise ValueError("Keine Sprache erkannt")
             self.send_json({"text": text, "language": info.language, "model": MODEL_NAME})
-        except ImportError:
+        except ImportError as error:
             self.send_json(
-                {"error": "faster-whisper fehlt. Bitte zuerst: pip install -r requirements.txt"},
+                {
+                    "error": (
+                        "faster-whisper konnte nicht geladen werden. "
+                        f"Details: {error}"
+                    )
+                },
                 HTTPStatus.SERVICE_UNAVAILABLE,
             )
         except Exception as error:
