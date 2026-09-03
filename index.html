@@ -15,14 +15,67 @@
 
 <main>
 <section id="dashboard" class="view active">
-  <h2>Leitfrage</h2>
-  <p class="lead">Wie können kritische Ereignisse so erfasst werden, dass schnell wertvolle Erkenntnisse entstehen?</p>
-  <div class="flow"><span>Telefon / E-Mail</span>→<span>strukturierter Case</span>→<span>Analyse + Ressourcen</span>→<span>Mensch entscheidet</span></div>
-  <div class="cards">
-    <article><b>Offene Cases</b><strong>3</strong><small>1 kritisch</small></article>
-    <article><b>Datenvollständigkeit</b><strong>82%</strong><small>Demo-Case</small></article>
-    <article><b>Automatisch übernommen</b><strong>11</strong><small>Felder</small></article>
-    <article><b>Fehlende Pflichtfelder</b><strong class="red">3</strong><small>Rückfrage nötig</small></article>
+  <div class="dashboard-head">
+    <h2>Dashboard</h2>
+    <time id="dashboardClock" aria-live="off">10:01&nbsp;&nbsp;03.09.2026</time>
+  </div>
+  <button class="back-button" type="button" aria-label="Zurück">◀</button>
+
+  <div class="case-board" aria-label="Aktiver Demo-Case">
+    <div class="case-table" role="table" aria-label="Case-Übersicht">
+      <div class="case-row case-header" role="row">
+        <b role="columnheader">Counter</b><b role="columnheader">Case</b><b role="columnheader">Trip</b>
+        <b role="columnheader">Type</b><b role="columnheader">Customer</b><b role="columnheader">Problem</b><b role="columnheader">Level</b>
+      </div>
+      <div class="case-row case-data" role="row">
+        <span role="cell">001</span><span role="cell">0309-001</span><span role="cell">BER → MUC</span>
+        <span role="cell">Trent 1000</span><span role="cell">LHA</span><span role="cell">Fatal Bird Strike</span><span role="cell" class="level-pill">1</span>
+      </div>
+    </div>
+
+    <p class="demo-label">Demo-/Mock-Daten · Entscheidung durch autorisierte Experten</p>
+    <div class="dashboard-grid">
+      <article class="dashboard-tile visualisation-tile">
+        <h3>Visualisation</h3>
+        <div class="engine-visual" role="img" aria-label="Schematische Darstellung einer beschädigten Triebwerksschaufel">
+          <div class="engine-core"></div>
+          <div class="engine-damage">!</div>
+        </div>
+      </article>
+
+      <article class="dashboard-tile notes-tile">
+        <h3>Notes</h3>
+        <p>Bad impact at 3000 ft<br>at 132 knots,<br>climbing angle 32°</p>
+      </article>
+
+      <article class="dashboard-tile weather-tile">
+        <h3>Weather</h3>
+        <div class="weather-map" role="img" aria-label="Schematische Wetterkarte">
+          <span class="cloud cloud-one"></span><span class="cloud cloud-two"></span><span class="cloud cloud-three"></span>
+          <i class="route-line"></i><b>BER</b><b>MUC</b>
+        </div>
+      </article>
+
+      <article class="dashboard-tile team-tile">
+        <h3>Solving/Team</h3>
+        <p><b>Action:</b> Part replacement</p>
+        <p><b>Field Service:</b> Thomas, Paul</p>
+        <button type="button">Historical Aircraft Events <span>▶</span></button>
+      </article>
+
+      <article class="dashboard-tile parts-tile">
+        <h3>Spare Parts</h3>
+        <p>Heatshield<br>Blades</p>
+      </article>
+
+      <article class="dashboard-tile flight-tile">
+        <h3>Flighttrip</h3>
+        <div class="flight-map" role="img" aria-label="Schematische Flugroute Berlin nach München">
+          <span class="airport airport-ber">BER</span><span class="plane">✈</span><span class="airport airport-muc">MUC</span>
+          <i></i>
+        </div>
+      </article>
+    </div>
   </div>
 </section>
 

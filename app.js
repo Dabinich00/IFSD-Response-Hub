@@ -21,3 +21,13 @@ document.getElementById('extract').onclick=()=>{
  document.getElementById('toResponse').disabled=false;
 };
 document.getElementById('toResponse').onclick=()=>show('response');
+
+const dashboardClock=document.getElementById('dashboardClock');
+function updateDashboardClock(){
+ const now=new Date();
+ const time=now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+ const date=now.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+ dashboardClock.textContent=`${time}  ${date}`;
+}
+updateDashboardClock();
+setInterval(updateDashboardClock,30000);
