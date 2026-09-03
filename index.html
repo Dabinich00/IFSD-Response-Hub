@@ -3,62 +3,109 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IFSD Response Hub</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <header><h1>IFSD Response Hub</h1><p>Team 3 – In-Flight Shutdown · Prototype v0.1</p></header>
 <nav>
-<button data-view="dashboard" class="active">Dashboard</button>
+<button data-view="overview" class="active">Overview</button>
+<button data-view="dashboard">Incident Dashboard</button>
 <button data-view="intake">1 · Intelligent Incident Intake</button>
 <button data-view="response">2 · Incident Response & Resource Intelligence</button>
 </nav>
 
 <main>
-<section id="dashboard" class="view active">
+<section id="overview" class="view active">
   <div class="overview-head">
     <div><span class="eyebrow">Operations Control</span><h2>Overview</h2></div>
-    <div class="dashboard-time"><span>Local time</span><time id="dashboardClock" aria-live="off">10:51&nbsp;&nbsp;03.09.2026</time></div>
+    <div class="dashboard-time"><span>Local time</span><time class="js-clock" aria-live="off">10:51&nbsp;&nbsp;03.09.2026</time></div>
   </div>
 
   <p class="overview-notice"><b>DEMO / MOCK DATA</b> · Concept prototype · Human-in-the-loop: final decisions remain with authorized experts.</p>
 
   <div class="world-map" aria-label="Geo Resource Map mit Demo-Cases, Teams und Ersatzteilen" role="region">
-    <div class="map-grid" aria-hidden="true"></div>
-    <div class="continent north-america" aria-hidden="true"></div><div class="continent south-america" aria-hidden="true"></div>
-    <div class="continent europe" aria-hidden="true"></div><div class="continent africa" aria-hidden="true"></div>
-    <div class="continent asia" aria-hidden="true"></div><div class="continent australia" aria-hidden="true"></div>
-    <span class="map-label atlantic">ATLANTIC</span><span class="map-label pacific">PACIFIC</span><span class="map-label indian">INDIAN OCEAN</span>
-
-    <button class="marker case priority-1" style="--x:51%;--y:37%" data-case="Case 003" aria-label="Case 003, Priorität 1"><span></span></button>
-    <button class="marker case priority-2" style="--x:62%;--y:57%" data-case="Case 007" aria-label="Case 007, Priorität 2"><span></span></button>
-    <button class="marker case priority-3" style="--x:41%;--y:26%" data-case="Case 009" aria-label="Case 009, Priorität 3"><span></span></button>
-    <button class="marker case priority-4" style="--x:27%;--y:46%" data-case="Case 011" aria-label="Case 011, Priorität 4"><span></span></button>
-    <button class="marker case priority-4" style="--x:70%;--y:41%" data-case="Case 012" aria-label="Case 012, Priorität 4"><span></span></button>
-    <button class="marker case priority-1" style="--x:80%;--y:76%" data-case="Case 005" aria-label="Case 005, Priorität 1"><span></span></button>
-    <button class="marker case priority-4" style="--x:36%;--y:80%" data-case="Case 006" aria-label="Case 006, Priorität 4"><span></span></button>
-
-    <button class="marker part" style="--x:49%;--y:43%" aria-label="Ersatzteil verfügbar"></button>
-    <button class="marker part" style="--x:30%;--y:57%" aria-label="Ersatzteil verfügbar"></button>
-    <button class="marker part" style="--x:44%;--y:62%" aria-label="Ersatzteil verfügbar"></button>
-    <button class="marker team" style="--x:52%;--y:45%" aria-label="Team verfügbar"></button>
-    <button class="marker team" style="--x:64%;--y:58%" aria-label="Team verfügbar"></button>
-    <button class="marker team" style="--x:31%;--y:58%" aria-label="Team verfügbar"></button>
-
-    <div class="case-popover" id="casePopover"><b>Case 003</b><span>Engine: Trent XWB</span><span>Priority: 1</span><span>Status: in progress</span><button type="button" data-open-response>Open response workspace →</button></div>
+    <div id="dashMap"></div>
+    <div class="map-weather" aria-hidden="true"></div>
     <div class="map-legend" aria-label="Legende"><span><i class="dot p1"></i>Priority 1</span><span><i class="dot p2"></i>Priority 2</span><span><i class="dot p3"></i>Priority 3</span><span><i class="dot p4"></i>Priority 4</span><span><i class="triangle"></i>Parts</span><span><i class="diamond"></i>Teams</span></div>
-    <div class="map-controls" aria-hidden="true"><button>+</button><button>−</button><button>⌖</button></div>
   </div>
 
   <div class="overview-bottom">
-    <article class="overview-card metric-card"><span>Active cases</span><strong>12</strong><small>Average duration</small><b>26h</b></article>
-    <article class="overview-card"><span>Priority levels</span><ul class="priority-list"><li><i class="dot p1"></i><b>1</b><em>3 cases</em></li><li><i class="dot p2"></i><b>2</b><em>2 cases</em></li><li><i class="dot p3"></i><b>3</b><em>1 case</em></li><li><i class="dot p4"></i><b>4</b><em>6 cases</em></li></ul></article>
-    <article class="overview-card recommendations"><span>Recommendations</span><p>• Plan 4 mechanics</p><p>• Send parts for Cases 002, 003</p><p>• Parts unavailable for Cases 001, 005</p></article>
+    <article class="overview-card metric-card"><span>Active cases</span><strong id="statActive">–</strong><small>Average duration</small><b>26h</b></article>
+    <article class="overview-card"><span>Priority levels</span><ul class="priority-list" id="priorityList"></ul></article>
+    <article class="overview-card recommendations" id="recoList"><span>Recommendations</span></article>
     <aside class="overview-actions">
       <label><input type="checkbox" checked data-layer="case"><i></i><span>Cases</span></label>
       <label><input type="checkbox" checked data-layer="team,part"><i></i><span>Teams and parts</span></label>
       <label><input type="checkbox" data-layer="weather"><i></i><span>Weather</span></label>
-      <button type="button" data-open-response>Case dashboard <span>→</span></button>
+      <button type="button" data-open-dashboard>Incident dashboard <span>→</span></button>
     </aside>
+  </div>
+</section>
+
+<section id="dashboard" class="view">
+  <div class="overview-head">
+    <div><span class="eyebrow">Operations Control</span><h2>Incident Dashboard</h2></div>
+    <div class="dashboard-time"><span>Local time</span><time id="dashboardClock" class="js-clock" aria-live="off">10:01&nbsp;&nbsp;03.09.2026</time></div>
+  </div>
+  <button class="back-button" type="button" aria-label="Zurück zur Overview" data-open-overview>◀</button>
+
+  <div class="case-board" aria-label="Aktiver Demo-Case">
+    <div class="case-table" role="table" aria-label="Case-Übersicht">
+      <div class="case-row case-header" role="row">
+        <b role="columnheader">Counter</b><b role="columnheader">Case</b><b role="columnheader">Trip</b>
+        <b role="columnheader">Type</b><b role="columnheader">Customer</b><b role="columnheader">Problem</b><b role="columnheader">Level</b>
+      </div>
+      <div class="case-row case-data" role="row">
+        <span role="cell" id="dCounter">001</span><span role="cell" id="dCase">0309-001</span><span role="cell" id="dTrip">BER → MUC</span>
+        <span role="cell" id="dType">Trent 1000</span><span role="cell" id="dCustomer">LHA</span><span role="cell" id="dProblem">Fatal Bird Strike</span><span role="cell" class="level-pill" id="dLevel">1</span>
+      </div>
+    </div>
+
+    <p class="demo-label"><span>DEMO DATA</span> <span id="dCaseName">Example case</span> · Human-in-the-loop · Entscheidung durch autorisierte Experten <button type="button" class="dash-to-response" data-open-response>Response & Ressourcen →</button></p>
+    <div class="dashboard-grid">
+      <article class="dashboard-tile visualisation-tile">
+        <div class="tile-heading"><span>01</span><h3>Visualisation</h3></div>
+        <div class="engine-visual" role="img" aria-label="Schematische Darstellung einer beschädigten Triebwerksschaufel">
+          <div class="engine-core"></div>
+          <div class="engine-damage">!</div>
+        </div>
+      </article>
+
+      <article class="dashboard-tile notes-tile">
+        <div class="tile-heading"><span>02</span><h3>Notes</h3></div>
+        <p id="dNotes">Bad impact at 3000 ft<br>at 132 knots,<br>climbing angle 32°</p>
+      </article>
+
+      <article class="dashboard-tile weather-tile">
+        <div class="tile-heading"><span>03</span><h3>Weather</h3></div>
+        <div class="weather-map" role="img" aria-label="Schematische Wetterkarte">
+          <span class="cloud cloud-one"></span><span class="cloud cloud-two"></span><span class="cloud cloud-three"></span>
+          <i class="route-line"></i><b id="wxFrom">BER</b><b id="wxTo">MUC</b>
+        </div>
+      </article>
+
+      <article class="dashboard-tile team-tile">
+        <div class="tile-heading"><span>04</span><h3>Solving/Team</h3></div>
+        <p><b>Action:</b> <span id="dAction">Part replacement</span></p>
+        <p><b>Field Service:</b> <span id="dField">Thomas, Paul</span></p>
+        <button type="button">Historical Aircraft Events <span>▶</span></button>
+      </article>
+
+      <article class="dashboard-tile parts-tile">
+        <div class="tile-heading"><span>05</span><h3>Spare Parts</h3></div>
+        <p id="dParts">Heatshield<br>Blades</p>
+      </article>
+
+      <article class="dashboard-tile flight-tile">
+        <div class="tile-heading"><span>06</span><h3>Flighttrip</h3></div>
+        <div class="flight-map" role="img" aria-label="Schematische Flugroute">
+          <span class="airport airport-ber" id="apFrom">BER</span><span class="plane">✈</span><span class="airport airport-muc" id="apTo">MUC</span>
+          <i></i>
+        </div>
+      </article>
+    </div>
   </div>
 </section>
 
@@ -83,27 +130,23 @@
 </section>
 
 <section id="response" class="view">
-  <h2>2 · Incident Response & Resource Intelligence</h2>
+  <div class="response-head">
+    <div><span class="eyebrow">Incident Response & Resource Intelligence</span><h2 id="respTitle">Kein Case ausgewählt</h2><p id="respMeta" class="resp-meta">Erstelle im Intake einen Case oder wähle einen Marker auf der Karte.</p></div>
+    <span class="resp-priority" id="respPriority">–</span>
+  </div>
   <div class="cards three">
-    <article><b>EHM / Sensorik</b><p>EGT <span class="red">↑ 14%</span></p><p>Vibration <span class="red">hoch</span></p><p>Oil Pressure: normal*</p></article>
-    <article><b>Case Completeness</b><strong>82%</strong><p>Ölstand fehlt</p><p>EHM-Datensatz fehlt</p><p>Crew Statement unbestätigt</p></article>
-    <article><b>Ähnliche Fälle</b><p>2025-041 · 76%</p><p>2024-118 · 61%</p><p>2023-302 · 53%</p></article>
+    <article><b>EHM / Sensorik <small class="src">Demo/Mock</small></b><div id="respEhm"><p>–</p></div></article>
+    <article><b>Case Completeness</b><strong id="respCompleteness">–</strong><div id="respMissing"><p>–</p></div></article>
+    <article><b>Ähnliche Fälle <small class="src">Demo/Mock</small></b><div id="respSimilar"><p>–</p></div></article>
   </div>
   <div class="two">
     <article>
       <h3>Geo Resource Map</h3>
-      <div class="map">
-        <div class="event">! IFSD Event</div>
-        <div class="r1">● Shannon<br><small>2 Engineers · Parts</small></div>
-        <div class="r2">● London<br><small>4 Engineers</small></div>
-        <div class="r3">● Dahlewitz<br><small>Specialist Team</small></div>
-      </div>
+      <div id="respMap" class="resp-map"></div>
     </article>
     <article>
       <h3>Empfohlene Ressourcen</h3>
-      <p><b>Shannon Service Partner</b><br>ETA 35 min</p>
-      <p><b>RR Specialist – Trent 1000</b><br>Remote Support · sofort</p>
-      <p><b>Replacement Part Kit</b><br>Warehouse London · ETA 3h 20m</p>
+      <div id="respResources"><p>–</p></div>
       <div class="note"><b>Human-in-the-loop</b><br>Das System strukturiert Daten und macht Vorschläge. Die sicherheitskritische Entscheidung bleibt beim autorisierten Experten.</div>
     </article>
   </div>
