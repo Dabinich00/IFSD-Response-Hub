@@ -87,3 +87,19 @@ main{max-width:1120px;padding:26px 22px 42px}
 .flight-map{background:linear-gradient(#c8e1e9 0 28%,#9ab988 29% 100%)}
 
 @media(max-width:620px){.dashboard-head{align-items:flex-start;flex-direction:column}.dashboard-time{align-items:flex-start}.dashboard-head h2{font-size:28px}.case-board{border-radius:18px}.dashboard-grid{padding:12px}}
+
+/* Editable intake and follow-up workflow */
+.field input{width:100%;margin-top:5px;padding:7px;border:1px solid #cbd9de;border-radius:6px;box-sizing:border-box;background:#fff;color:#17313b;font:inherit;font-weight:700}
+.case-actions{display:flex;align-items:center;gap:10px;margin:12px 0 18px}
+.case-status{padding:6px 9px;border-radius:999px;background:#edf2f4;color:#5f7380;font-size:12px;font-weight:700}
+.case-status[data-state="waiting"]{background:#fff0ce;color:#815f12}
+.case-status[data-state="saved"],.case-status[data-state="ready"]{background:#e2f5eb;color:#286b47}
+.case-status[data-state="warning"]{background:#ffe8e8;color:#9b3030}
+.miss{display:flex;align-items:center;gap:8px;cursor:pointer}
+.miss input{accent-color:#1b7a80}
+.follow-up-panel{margin:12px 0;padding:13px;border:1px solid #c9dfe1;border-radius:10px;background:#f5fbfb}
+.follow-up-panel label{display:block;margin:8px 0 5px;font-size:12px;font-weight:800}
+.follow-up-panel textarea{min-height:105px}
+.follow-up-panel #receivedInfo{min-height:75px}
+.follow-up-panel button{margin-top:9px;background:#1b7a80;color:#fff}
+.complete-message{padding:10px;border-radius:8px;background:#e5f6ec;color:#286b47;font-weight:700}

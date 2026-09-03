@@ -1,5 +1,7 @@
 const views=document.querySelectorAll('.view');const nav=[...document.querySelectorAll('nav button')];
 let currentCase=null;
+let caseSourceText='';
+let missingItems=[];
 function show(id){views.forEach(v=>v.classList.remove('active'));nav.forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');nav.find(b=>b.dataset.view===id)?.classList.add('active')}
 nav.forEach(b=>b.onclick=()=>show(b.dataset.view));
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active')});
@@ -23,14 +25,79 @@ document.getElementById('extract').onclick=()=>{
  if(routeMatch)data.Route=`${routeMatch[1].trim()} → ${routeMatch[2].trim()}`;
  if(/^LH/i.test(data.Flugnummer))data.Kunde='LHA';
  if(/^BA/i.test(data.Flugnummer))data.Kunde='BA';
- document.getElementById('fields').innerHTML=Object.entries(data).map(([k,v])=>`<div class="field"><small>${k}</small><b>${v}</b></div>`).join('');
- const missing=['Ölstand / Oil-System-Informationen','vollständiger EHM-Datensatz','bestätigtes Crew Statement'];
- document.getElementById('missing').innerHTML=missing.map(x=>`<div class="miss">⚠ ${x}</div>`).join('');
+ renderCaseFields(data);
+ missingItems=['Ölstand / Oil-System-Informationen','vollständiger EHM-Datensatz','bestätigtes Crew Statement'];
+ renderMissingItems();
  currentCase=data;
+ caseSourceText=t;
  syncDashboard(data,t);
+ document.getElementById('saveCase').disabled=false;
+ document.getElementById('createFollowUp').disabled=false;
+ setCaseStatus('Case erstellt','ready');
+ document.getElementById('followUpPanel').hidden=true;
  document.getElementById('toResponse').disabled=false;
 };
 document.getElementById('toResponse').onclick=()=>show('response');
+
+function renderCaseFields(data){
+ const fields=document.getElementById('fields');
+ fields.replaceChildren();
+ Object.entries(data).forEach(([key,value])=>{
+  const wrapper=document.createElement('label');wrapper.className='field';
+  const caption=document.createElement('small');caption.textContent=key;
+  const input=document.createElement('input');input.value=value;input.dataset.caseKey=key;
+  wrapper.append(caption,input);fields.append(wrapper);
+ });
+}
+
+function renderMissingItems(){
+ const missing=document.getElementById('missing');missing.replaceChildren();
+ if(!missingItems.length){
+  const complete=document.createElement('div');complete.className='complete-message';complete.textContent='✓ Alle angeforderten Pflichtinformationen wurden ergänzt.';missing.append(complete);
+ }else{
+  missingItems.forEach(item=>{
+   const label=document.createElement('label');label.className='miss';
+   const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=item;
+   label.append(checkbox,document.createTextNode(item));missing.append(label);
+  });
+ }
+ updateCompleteness();
+}
+
+function setCaseStatus(message,state){
+ const status=document.getElementById('caseStatus');status.textContent=message;status.dataset.state=state;
+}
+
+document.getElementById('saveCase').onclick=()=>{
+ if(!currentCase)return;
+ document.querySelectorAll('[data-case-key]').forEach(input=>currentCase[input.dataset.caseKey]=input.value.trim()||'nicht erkannt');
+ syncDashboard(currentCase,caseSourceText);setCaseStatus('Änderungen gespeichert','saved');
+};
+
+document.getElementById('createFollowUp').onclick=()=>{
+ const selected=[...document.querySelectorAll('#missing input:checked')].map(input=>input.value);
+ if(!selected.length){setCaseStatus('Bitte fehlende Angaben auswählen','warning');return;}
+ const flight=currentCase?.Flugnummer||'dem gemeldeten Flug';
+ document.getElementById('followUpText').value=`Betreff: Fehlende Informationen zu Case ${currentCase['Case-ID']}\n\nBitte senden Sie uns für ${flight} noch folgende Informationen:\n${selected.map(item=>`• ${item}`).join('\n')}\n\nVielen Dank. Die fachliche Bewertung erfolgt durch einen autorisierten Experten.`;
+ document.getElementById('receivedInfo').value='';document.getElementById('followUpPanel').hidden=false;
+ setCaseStatus('Rückfrage ausstehend','waiting');textDashboardStatus(`Follow-up pending · ${flight}`);
+};
+
+document.getElementById('applyReceivedInfo').onclick=()=>{
+ const answer=document.getElementById('receivedInfo').value.trim();
+ const selected=[...document.querySelectorAll('#missing input:checked')].map(input=>input.value);
+ if(!answer||!selected.length){setCaseStatus('Antwort und Angaben erforderlich','warning');return;}
+ missingItems=missingItems.filter(item=>!selected.includes(item));caseSourceText=`${caseSourceText}\nErgänzung: ${answer}`;
+ renderMissingItems();document.getElementById('followUpPanel').hidden=true;syncDashboard(currentCase,caseSourceText);setCaseStatus('Ergänzung übernommen','saved');
+};
+
+function updateCompleteness(){
+ const completeness=Math.round(((3-missingItems.length)/3)*18+82);
+ document.getElementById('completenessValue').textContent=`${completeness}%`;
+ document.getElementById('responseMissing').innerHTML=missingItems.length?missingItems.map(item=>`<p>${item}</p>`).join(''):'<p>Keine offenen angeforderten Angaben</p>';
+}
+
+function textDashboardStatus(value){document.getElementById('dashboardSyncStatus').textContent=value;}
 
 function syncDashboard(data,sourceText){
  const text=(id,value)=>document.getElementById(id).textContent=value;
@@ -42,7 +109,7 @@ function syncDashboard(data,sourceText){
  text('dashboardCustomer',data.Kunde);
  text('dashboardProblem',problem);
  text('dashboardLevel',data.Priorität==='CRITICAL'?'1':'2');
- text('dashboardSyncStatus',`Synced from intake · ${data.Flugnummer}`);
+ textDashboardStatus(`Synced from intake · ${data.Flugnummer}`);
  text('dashboardNotes',sourceText.length>150?`${sourceText.slice(0,147)}…`:sourceText);
  const cityCodes={'New York':'JFK','Frankfurt':'FRA','Berlin':'BER','München':'MUC','Munich':'MUC','Shannon':'SNN','Boston':'BOS'};
  if(data.Route!=='nicht erkannt'){

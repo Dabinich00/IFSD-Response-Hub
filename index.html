@@ -92,8 +92,20 @@
     <article>
       <h3>Strukturierter Case</h3>
       <div id="fields" class="fields"></div>
+      <div class="case-actions">
+        <button id="saveCase" type="button" disabled>Änderungen speichern</button>
+        <span id="caseStatus" class="case-status">Noch kein Case</span>
+      </div>
       <h3>Fehlende Informationen</h3>
       <div id="missing">Noch keine Extraktion.</div>
+      <button id="createFollowUp" type="button" disabled>Rückfrage erstellen</button>
+      <section id="followUpPanel" class="follow-up-panel" hidden>
+        <label for="followUpText">Generierte Rückfrage</label>
+        <textarea id="followUpText" readonly></textarea>
+        <label for="receivedInfo">Erhaltene Antwort / Ergänzung</label>
+        <textarea id="receivedInfo" placeholder="Antwort des Kunden oder der Crew hier einfügen …"></textarea>
+        <button id="applyReceivedInfo" type="button">Ausgewählte Angaben übernehmen</button>
+      </section>
       <button id="toResponse" disabled>Weiter zu Analyse & Ressourcen</button>
     </article>
   </div>
@@ -103,7 +115,7 @@
   <h2>2 · Incident Response & Resource Intelligence</h2>
   <div class="cards three">
     <article><b>EHM / Sensorik</b><p>EGT <span class="red">↑ 14%</span></p><p>Vibration <span class="red">hoch</span></p><p>Oil Pressure: normal*</p></article>
-    <article><b>Case Completeness</b><strong>82%</strong><p>Ölstand fehlt</p><p>EHM-Datensatz fehlt</p><p>Crew Statement unbestätigt</p></article>
+    <article><b>Case Completeness</b><strong id="completenessValue">82%</strong><div id="responseMissing"><p>Ölstand fehlt</p><p>EHM-Datensatz fehlt</p><p>Crew Statement unbestätigt</p></div></article>
     <article><b>Ähnliche Fälle</b><p>2025-041 · 76%</p><p>2024-118 · 61%</p><p>2023-302 · 53%</p></article>
   </div>
   <div class="two">
