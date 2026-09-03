@@ -1,10 +1,12 @@
 {
   "project": "IFSD Response Hub",
-  "version": "0.1 handoff",
+  "version": "0.2",
   "team": "Team 3 – In-Flight Shutdown",
   "core_features": [
     "Intelligent Incident Intake",
     "Incident Response & Resource Intelligence"
   ],
-  "entrypoint": "index.html"
+  "entrypoint": "server.py",
+  "fallback_entrypoint": "index.html",
+  "speech_to_text": "faster-whisper (optional local service)"
 }

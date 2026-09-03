@@ -107,3 +107,10 @@ main{max-width:1120px;padding:26px 22px 42px}
 #intake:not(.case-created) #intakeResult{display:none}
 #intake:not(.case-created) #intakeInput{padding:24px;box-shadow:0 16px 44px #16354d12}
 #intake:not(.case-created) #sourceText{min-height:330px}
+
+/* Local speech-to-text recorder */
+.recorder{margin:10px 0 16px;padding:14px;border:1px solid #c9dfe4;border-radius:12px;background:linear-gradient(135deg,#f4fbfb,#eef5f8)}
+.recorder-heading,.recorder-controls{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.recorder-heading small,.recorder-heading strong{display:block}.recorder-heading small{color:#70858e;font-size:10px;text-transform:uppercase;letter-spacing:1px}.recorder-heading strong{margin-top:3px;color:#0b1f33}
+.recorder-status{padding:5px 8px;border-radius:999px;background:#e7eef1;color:#5d7079;font-size:11px;font-weight:800}.recorder-status[data-state="recording"]{background:#ffe5e6;color:#a82f35}.recorder-status[data-state="working"]{background:#fff0cc;color:#806015}.recorder-status[data-state="success"]{background:#dff5e8;color:#216842}.recorder-status[data-state="error"]{background:#ffe5e6;color:#a82f35}
+.recorder-controls{justify-content:flex-start;flex-wrap:wrap;margin-top:12px}.recorder-controls label{margin-left:auto;color:#5c717b;font-size:11px;font-weight:700}.recorder-controls select{margin-left:5px;padding:7px;border:1px solid #c4d4da;border-radius:7px;background:#fff}.recorder-controls output{min-width:42px;color:#0b1f33;font-variant-numeric:tabular-nums;font-weight:800}.recorder-note{margin:9px 0 0;color:#71858e;font-size:11px}#startRecording{background:#0b1f33;color:#fff}#stopRecording{background:#e14f55;color:#fff}#stopRecording:disabled,#startRecording:disabled{opacity:.45;cursor:not-allowed}

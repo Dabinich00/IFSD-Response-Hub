@@ -21,6 +21,57 @@ const fields=[
 ];
 const priorityLevels=['','1 - Most urgent','2 - Urgent','3 - Medium','4 - Low','5 - Lowest'];
 
+let mediaRecorder=null;
+let audioChunks=[];
+let recordingStartedAt=0;
+let recordingTimerId=null;
+const startRecordingButton=document.getElementById('startRecording');
+const stopRecordingButton=document.getElementById('stopRecording');
+
+if(startRecordingButton&&stopRecordingButton){
+ startRecordingButton.onclick=async()=>{
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){setRecorderStatus('Browser unterstützt keine Aufnahme','error');return;}
+  try{
+   const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+   const preferredType=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
+   mediaRecorder=new MediaRecorder(stream,preferredType?{mimeType:preferredType}:undefined);audioChunks=[];
+   mediaRecorder.ondataavailable=event=>{if(event.data.size)audioChunks.push(event.data)};
+   mediaRecorder.onstop=()=>transcribeRecording(stream);
+   mediaRecorder.start();recordingStartedAt=Date.now();updateRecordingTimer();recordingTimerId=setInterval(updateRecordingTimer,500);
+   startRecordingButton.disabled=true;stopRecordingButton.disabled=false;setRecorderStatus('Aufnahme läuft','recording');
+  }catch(error){setRecorderStatus(error.name==='NotAllowedError'?'Mikrofon nicht freigegeben':'Aufnahme nicht möglich','error');}
+ };
+
+ stopRecordingButton.onclick=()=>{
+  if(mediaRecorder?.state==='recording'){mediaRecorder.stop();clearInterval(recordingTimerId);stopRecordingButton.disabled=true;setRecorderStatus('Transkription läuft …','working');}
+ };
+}
+
+function setRecorderStatus(message,state='idle'){
+ const status=document.getElementById('recorderStatus');if(!status)return;
+ status.textContent=message;status.dataset.state=state;
+}
+
+function updateRecordingTimer(){
+ const timer=document.getElementById('recordingTimer');if(!timer)return;
+ const seconds=Math.floor((Date.now()-recordingStartedAt)/1000);
+ timer.textContent=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
+}
+
+async function transcribeRecording(stream){
+ stream.getTracks().forEach(track=>track.stop());
+ try{
+  const audioBlob=new Blob(audioChunks,{type:mediaRecorder.mimeType||'audio/webm'});
+  const language=document.getElementById('transcriptionLanguage').value;
+  const response=await fetch(`/api/transcribe${language?`?language=${language}`:''}`,{method:'POST',headers:{'Content-Type':audioBlob.type},body:audioBlob});
+  const result=await response.json();
+  if(!response.ok)throw new Error(result.error||'Transkription fehlgeschlagen');
+  document.getElementById('sourceText').value=result.text;
+  setRecorderStatus(`Fertig · ${result.language||'auto'}`,'success');
+ }catch(error){setRecorderStatus(error.message.includes('Failed to fetch')?'Lokaler Whisper-Server nicht erreichbar':error.message,'error');}
+ finally{startRecordingButton.disabled=false;mediaRecorder=null;audioChunks=[];}
+}
+
 document.getElementById('extract').onclick=()=>{
  const sourceText=document.getElementById('sourceText').value.trim();
  const activeTab=document.querySelector('.tabs button.active')?.textContent||'E-Mail / Text';
@@ -50,6 +101,7 @@ function extractCase(text,activeTab){
   engine1:m(/\bEngine\s*1(?:\s*Number|\s*No\.?|\s*ID)?\s*:\s*([A-Z0-9-]{4,24})\b/i),
   engine2:m(/\bEngine\s*2(?:\s*Number|\s*No\.?|\s*ID)?\s*:\s*([A-Z0-9-]{4,24})\b/i),
   problemNotes:extractProblemNotes(text),
+  assistantSuggestions:'',
   priority:calculatePriority(requestedDepartureDate)
  };
 }
@@ -127,7 +179,7 @@ function fieldMarkup(field,value){
  return `<div class="field"><small>${field.label}${field.required?' *':''}</small><input data-case-field="${field.key}" value="${safeValue}" ${field.readonly?'readonly':''}></div>`;
 }
 
-function renderAlerts(data,sourceText){
+function renderAlerts(data){
  const alerts=[];
  fields.filter(field=>field.required).forEach(field=>{
   if(!data[field.key]||data[field.key]==='Pending')alerts.push(`${field.label} missing`);

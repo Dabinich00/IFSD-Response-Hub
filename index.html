@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header><h1>IFSD Response Hub</h1><p>Team 3 – In-Flight Shutdown · Prototype v0.1</p></header>
+<header><h1>IFSD Response Hub</h1><p>Team 3 – In-Flight Shutdown · Prototype v0.2</p></header>
 <nav>
 <button data-view="dashboard" class="active">Dashboard</button>
 <button data-view="intake">1 · Intelligent Incident Intake</button>
@@ -85,6 +85,25 @@
   <div class="two">
     <article id="intakeInput">
       <div class="tabs"><button>E-Mail / Text</button><button>Telefon / Speech-to-Text</button></div>
+      <section class="recorder" aria-labelledby="recorderTitle">
+        <div class="recorder-heading">
+          <div><small>Local AI transcription</small><strong id="recorderTitle">faster-whisper</strong></div>
+          <span id="recorderStatus" class="recorder-status" data-state="idle">Ready</span>
+        </div>
+        <div class="recorder-controls">
+          <button id="startRecording" type="button">● Start recording</button>
+          <button id="stopRecording" type="button" disabled>■ Stop & transcribe</button>
+          <label>Language
+            <select id="transcriptionLanguage">
+              <option value="">Automatic</option>
+              <option value="de">Deutsch</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <output id="recordingTimer">00:00</output>
+        </div>
+        <p class="recorder-note">Audio is sent only to the locally running Whisper service.</p>
+      </section>
       <label>Incoming Email / Transcript</label>
       <textarea id="sourceText">Subject: AOG support request - Lufthansa aircraft D-AIXP
 
@@ -116,7 +135,7 @@ The customer requests the aircraft to depart again on 2026-09-04 at 08:00 UTC. O
   <h2>2 · Incident Response & Resource Intelligence</h2>
   <div class="cards three">
     <article><b>EHM / Sensorik</b><p>EGT <span class="red">↑ 14%</span></p><p>Vibration <span class="red">hoch</span></p><p>Oil Pressure: normal*</p></article>
-    <article><b>Case Completeness</b><strong>82%</strong><p>Ölstand fehlt</p><p>EHM-Datensatz fehlt</p><p>Crew Statement unbestätigt</p></article>
+    <article><b>Case Completeness</b><strong id="completenessValue">82%</strong><div id="responseMissing"><p>Ölstand fehlt</p><p>EHM-Datensatz fehlt</p><p>Crew Statement unbestätigt</p></div></article>
     <article><b>Ähnliche Fälle</b><p>2025-041 · 76%</p><p>2024-118 · 61%</p><p>2023-302 · 53%</p></article>
   </div>
   <div class="two">

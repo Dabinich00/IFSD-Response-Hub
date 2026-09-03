@@ -25,15 +25,28 @@ The prototype explores how critical in-flight events can be captured, structured
 
 ## Run locally
 
-No build step or external dependency is required.
+### Text-only demo
 
-1. Clone or download this repository.
-2. Open `index.html` in a modern browser.
-3. Follow the demo flow: Dashboard → Incident Intake → Create case → Analysis & Resources.
+Open `index.html` in a modern browser. All case, follow-up and dashboard features remain usable without a backend.
+
+### Speech-to-text with faster-whisper
+
+Python 3.10+ is recommended.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python3 server.py
+```
+
+Then open `http://127.0.0.1:8000`, select **Intelligent Incident Intake**, allow microphone access, record the report and choose **Stoppen & transkribieren**.
+
+The default multilingual `base` model is downloaded on first use. Select another model with, for example, `WHISPER_MODEL=small python3 server.py`. Audio is processed locally and temporary recordings are deleted after transcription.
 
 ## Current status
 
-**Prototype v0.1** is a static HTML/CSS/JavaScript demonstrator. The next planned version will add editable case fields, follow-up requests, selectable resources and a generated case summary.
+**Prototype v0.2** combines the static demonstrator with an optional local faster-whisper service. It includes editable case fields, follow-up requests and synchronized dashboard data.
 
 See [`PROJECT_BRIEF.md`](PROJECT_BRIEF.md) for the product context and [`BACKLOG.md`](BACKLOG.md) for planned work.
 
@@ -42,6 +55,8 @@ See [`PROJECT_BRIEF.md`](PROJECT_BRIEF.md) for the product context and [`BACKLOG
 - `index.html` – application screens and demo content
 - `styles.css` – responsive visual styling
 - `app.js` – navigation and rule-based demo extraction
+- `server.py` – local static server and faster-whisper API
+- `requirements.txt` – optional speech-to-text dependency
 - `PROJECT_BRIEF.md` – challenge and product concept
 - `BACKLOG.md` – prioritized product backlog
 - `AGENTS.md` – contribution and safety guidance
@@ -52,4 +67,3 @@ See [`PROJECT_BRIEF.md`](PROJECT_BRIEF.md) for the product context and [`BACKLOG
 - Mock data must remain clearly identified
 - The system supports experts; it does not replace expert judgment
 - No operational Rolls-Royce data is included
-
