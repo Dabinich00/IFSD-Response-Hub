@@ -237,11 +237,12 @@ const MISSING_FIELDS = [
   { label: 'vollständiger EHM-Datensatz', get: t => /EHM[- ]?daten\s*(?:liegen vor|verfügbar|:)/i.test(t) ? 'vorhanden' : null },
   { label: 'bestätigtes Crew Statement', get: t => /crew[- ]?statement\s*(?:bestätigt|confirmed|liegt vor)/i.test(t) ? 'bestätigt' : null }
 ];
-const FOLLOWUP_Q = {
-  'Ölstand / Oil-System-Informationen': 'Bitte aktuellen Ölstand und Oil-System-Status nachreichen.',
-  'vollständiger EHM-Datensatz': 'Vollständigen EHM-Datensatz / Sensor-Zeitreihe anfordern.',
-  'bestätigtes Crew Statement': 'Bestätigtes Crew-Statement einholen.'
-};
+const TOTAL_FIELDS = CORE_FIELDS.length + MISSING_FIELDS.length;
+let currentMissing = [];
+function computeCompleteness() {
+  const foundSoft = MISSING_FIELDS.length - currentMissing.length;
+  return Math.round(((window.__foundCore || 0) + foundSoft) / TOTAL_FIELDS * 100);
+}
 
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
@@ -264,10 +265,8 @@ function renderMissing(missing, completeness) {
   updateMissingState();
 }
 function updateMissingState() {
-  const total = document.querySelectorAll('[data-miss]').length;
   const checked = document.querySelectorAll('[data-miss]:checked').length;
   document.getElementById('askFollowup').disabled = checked === 0;
-  document.getElementById('saveHint').hidden = !(total > 0 && checked === 0);
 }
 function currentFieldValues() {
   const o = {};
@@ -313,9 +312,13 @@ document.getElementById('extract').onclick = () => {
   const completeness = Math.round((foundCore + foundSoft) / (CORE_FIELDS.length + MISSING_FIELDS.length) * 100);
   window.__completeness = completeness;
 
+  window.__foundCore = foundCore;
+  currentMissing = missing.slice();
+
   renderFields([['Case-ID', 'IFSD-2026-0903-017'], ['Priorität', critical ? 'CRITICAL' : 'REVIEW'], ...coreValues]);
-  renderMissing(missing, completeness);
+  renderMissing(currentMissing, completeness);
   document.getElementById('followupOut').innerHTML = '';
+  document.getElementById('saveHint').hidden = true;
   refreshLive();
   document.getElementById('toResponse').disabled = false;
 };
@@ -329,11 +332,37 @@ document.getElementById('saveCase').onclick = () => {
 
 document.getElementById('askFollowup').onclick = () => {
   const items = [...document.querySelectorAll('[data-miss]:checked')].map(x => x.dataset.miss);
-  if (!items.length) { document.getElementById('saveHint').hidden = false; return; }
+  if (!items.length) return;
+  const caseId = document.querySelector('#fields input[data-k="Case-ID"]')?.value || 'IFSD-2026-0903-017';
+  const flight = document.querySelector('#fields input[data-k="Flugnummer"]')?.value || 'LH412';
+  const msg = `Betreff: Fehlende Informationen zu Case ${caseId}\n\nBitte senden Sie uns für ${flight} noch folgende Informationen:\n` +
+    items.map(i => `• ${i}`).join('\n');
   document.getElementById('followupOut').innerHTML =
-    `<div class="followup"><b>Rückfrage erstellt · an ${document.querySelector('#fields input[data-k="Kunde"]')?.value || 'Airline'} / Crew</b><ul>` +
-    items.map(i => `<li>${FOLLOWUP_Q[i] || `„${i}" nachfordern.`}</li>`).join('') + `</ul></div>`;
+    `<div class="followup">
+       <label class="followup-label">Generierte Rückfrage</label>
+       <textarea id="followupText" class="followup-area" rows="4"></textarea>
+       <label class="followup-label">Erhaltene Antwort / Ergänzung</label>
+       <textarea id="followupAnswer" class="followup-area" rows="3" placeholder="Antwort des Kunden oder der Crew hier einfügen …"></textarea>
+       <button type="button" id="applyFollowup">Ausgewählte Angaben übernehmen</button>
+     </div>`;
+  document.getElementById('followupText').value = msg;
+  document.getElementById('saveHint').hidden = false;   // "Rückfrage ausstehend"
+  document.getElementById('applyFollowup').onclick = () => applyFollowup(items);
 };
+
+// Mark the selected missing items as provided, lifting completeness and clearing the pending state.
+function applyFollowup(items) {
+  const answer = document.getElementById('followupAnswer')?.value.trim();
+  currentMissing = currentMissing.filter(m => !items.includes(m));
+  window.__completeness = computeCompleteness();
+  renderMissing(currentMissing, window.__completeness);
+  document.getElementById('followupOut').innerHTML =
+    `<div class="followup resolved"><b>Angaben übernommen ✓</b>` +
+    (answer ? `<p>${esc(answer)}</p>` : '') +
+    `<small>${items.length} Angabe(n) ergänzt · Completeness ${window.__completeness}%</small></div>`;
+  document.getElementById('saveHint').hidden = true;
+  refreshLive();
+}
 
 document.getElementById('toResponse').onclick = () => {
   refreshLive();

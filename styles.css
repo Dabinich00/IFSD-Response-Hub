@@ -189,3 +189,17 @@ main{max-width:1120px;padding:26px 22px 42px}
 .followup b{color:#086e6b;font-size:13px}
 .followup ul{margin:8px 0 0;padding-left:18px}
 .followup li{margin:4px 0;font-size:13px;color:#17313b}
+
+/* ---------- Intake follow-up (Rückfrage) box ---------- */
+.save-hint{background:#f6ead0;color:#8a6d1f}
+.followup-label{display:block;margin:10px 0 5px;font-size:13px;font-weight:800;color:#123452}
+.followup .followup-label:first-child{margin-top:0}
+.followup-area{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cfe0e0;border-radius:9px;background:#fff;font:inherit}
+#followupText{min-height:96px}
+#followupAnswer{min-height:70px}
+#applyFollowup{margin-top:10px;background:#1b7a80;color:#fff}
+.followup.resolved{border-color:#a9d6b7;background:#eef8f1}
+.followup.resolved b{color:#1f6b3a}
+.followup.resolved p{margin:8px 0 4px;padding:9px 11px;border:1px solid #cfe6d6;border-radius:8px;background:#fff;font-size:13px;color:#17313b;white-space:pre-wrap}
+.followup.resolved small{display:block;color:#4e666e;font-size:12px}
+.next-btn{display:block;margin-top:14px}
