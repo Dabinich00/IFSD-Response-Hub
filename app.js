@@ -7,6 +7,7 @@ document.querySelectorAll('.tabs button').forEach((b,index)=>{if(index===0)b.cla
 
 const fields=[
  {key:'caseId',label:'Case ID',readonly:true,required:true},
+ {key:'source',label:'Source',readonly:true},
  {key:'customer',label:'Customer',required:true},
  {key:'aircraftId',label:'Aircraft ID',required:true},
  {key:'aircraftLocation',label:'Aircraft Location',required:true},
@@ -15,12 +16,15 @@ const fields=[
  {key:'engine1',label:'Engine 1 Number',required:true},
  {key:'engine2',label:'Engine 2 Number',required:true},
  {key:'problemNotes',label:'Problem / Notes',type:'textarea',required:true},
- {key:'priority',label:'Priority',required:true}
+ {key:'assistantSuggestions',label:'Assistant Suggestions',type:'textarea'},
+ {key:'priority',label:'Priority',type:'priority',required:true}
 ];
+const priorityLevels=['','1 - Most urgent','2 - Urgent','3 - Medium','4 - Low','5 - Lowest'];
 
 document.getElementById('extract').onclick=()=>{
  const sourceText=document.getElementById('sourceText').value.trim();
- const data=extractCase(sourceText);
+ const activeTab=document.querySelector('.tabs button.active')?.textContent||'E-Mail / Text';
+ const data=extractCase(sourceText,activeTab);
  currentCase=data;
  renderCase(data);
  renderAlerts(data,sourceText);
@@ -30,13 +34,14 @@ document.getElementById('extract').onclick=()=>{
  document.getElementById('toResponse').disabled=false;
 };
 
-function extractCase(text){
+function extractCase(text,activeTab){
  const m=(regex,fallback='')=>(text.match(regex)||[])[1]?.trim()||fallback;
  const requestedDepartureDate=extractRequestedDeparture(text);
  const customer=m(/\bCustomer:\s*([^\n\r]+)/i)||m(/\b(Lufthansa|British Airways|Emirates|Qatar Airways|LHA|BA)\b/i);
  const aircraftLocation=extractAircraftLocation(text);
  return {
   caseId:'IFSD-2026-0903-017',
+  source:/phone|telefon/i.test(activeTab)?'Phone Transcript':'Email',
   customer:normalizeCustomer(customer),
   aircraftId:m(/\b(?:Aircraft ID|Aircraft|Registration|Tail(?: number)?):\s*([A-Z0-9-]{4,12})\b/i)||m(/\b([A-Z]-[A-Z0-9]{4}|N[0-9A-Z]{4,6}|G-[A-Z0-9]{4})\b/i),
   aircraftLocation,
@@ -90,9 +95,11 @@ function calculatePriority(requestedDepartureDate){
  const today=new Date();
  today.setHours(0,0,0,0);
  const days=Math.round((requested-today)/86400000);
- if(days<=1)return 'P1 - Immediate';
- if(days<=7)return 'P2 - Urgent';
- return 'P3 - Planned';
+ if(days<=1)return '1 - Most urgent';
+ if(days<=3)return '2 - Urgent';
+ if(days<=14)return '3 - Medium';
+ if(days<=30)return '4 - Low';
+ return '5 - Lowest';
 }
 
 function renderCase(data){
@@ -112,6 +119,10 @@ function renderCase(data){
 
 function fieldMarkup(field,value){
  const safeValue=escapeHtml(value||'');
+ if(field.type==='priority'){
+  const options=priorityLevels.map(level=>`<option value="${escapeHtml(level)}"${level===(value||'')?' selected':''}>${escapeHtml(level||'Select priority')}</option>`).join('');
+  return `<div class="field"><small>${field.label}${field.required?' *':''}</small><select data-case-field="${field.key}">${options}</select></div>`;
+ }
  if(field.type==='textarea')return `<div class="field field-wide"><small>${field.label}${field.required?' *':''}</small><textarea data-case-field="${field.key}">${safeValue}</textarea></div>`;
  return `<div class="field"><small>${field.label}${field.required?' *':''}</small><input data-case-field="${field.key}" value="${safeValue}" ${field.readonly?'readonly':''}></div>`;
 }
@@ -135,10 +146,10 @@ function syncDashboard(data,sourceText){
  text('dashboardType',affectedEngine);
  text('dashboardCustomer',data.customer);
  text('dashboardProblem',problem.length>28?`${problem.slice(0,25)}...`:problem);
- text('dashboardLevel',data.priority.startsWith('P1')?'1':data.priority.startsWith('P2')?'2':'3');
+ text('dashboardLevel',(data.priority||'').charAt(0)||'3');
  text('dashboardSyncStatus',`Synced from intake · ${data.aircraftId||'Aircraft ID open'}`);
  text('dashboardNotes',sourceText.length>150?`${sourceText.slice(0,147)}…`:sourceText);
- document.getElementById('dashboardLevel').classList.toggle('review',!data.priority.startsWith('P1'));
+ document.getElementById('dashboardLevel').classList.toggle('review',!String(data.priority).startsWith('1'));
 }
 
 function escapeHtml(value){

@@ -91,6 +91,7 @@ main{max-width:1120px;padding:26px 22px 42px}
 /* Intake v0.2 case fields */
 .field input,.field select,.field textarea{width:100%;margin-top:5px;border:0;background:transparent;color:#17313b;font:inherit;font-weight:700;outline:none}
 .field input[readonly]{color:#536b78}
+.field:has(input[readonly]){background:#fbfcfd}
 .field select{cursor:pointer}
 .field textarea{min-height:86px;padding:0;resize:vertical}
 .field-wide{grid-column:1/-1}
