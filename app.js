@@ -31,3 +31,37 @@ function updateDashboardClock(){
 }
 updateDashboardClock();
 setInterval(updateDashboardClock,30000);
+
+// Interactive layers and case selection for the demo Geo Resource Map.
+const worldMap=document.querySelector('.world-map');
+const casePopover=document.getElementById('casePopover');
+const caseDetails={
+ 'Case 003':['Trent XWB','1','in progress'],
+ 'Case 005':['Trent 1000','1','awaiting parts'],
+ 'Case 006':['Trent 7000','4','monitoring'],
+ 'Case 007':['Trent 700','2','team assigned'],
+ 'Case 009':['Pearl 15','3','under review'],
+ 'Case 011':['Trent 900','4','monitoring'],
+ 'Case 012':['Trent XWB','4','data intake']
+};
+
+document.querySelectorAll('.marker.case').forEach(marker=>marker.addEventListener('click',()=>{
+ const [engine,priority,status]=caseDetails[marker.dataset.case];
+ casePopover.querySelector('b').textContent=marker.dataset.case;
+ const rows=casePopover.querySelectorAll('span');
+ rows[0].textContent=`Engine: ${engine}`;
+ rows[1].textContent=`Priority: ${priority}`;
+ rows[2].textContent=`Status: ${status}`;
+ casePopover.style.left=`min(${marker.style.getPropertyValue('--x')}, calc(100% - 210px))`;
+ casePopover.style.top=`max(14px, calc(${marker.style.getPropertyValue('--y')} - 105px))`;
+}));
+
+document.querySelectorAll('[data-layer]').forEach(toggle=>toggle.addEventListener('change',()=>{
+ const layers=toggle.dataset.layer.split(',');
+ if(layers.includes('weather')) worldMap.classList.toggle('weather-on',toggle.checked);
+ layers.filter(layer=>layer!=='weather').forEach(layer=>{
+  document.querySelectorAll(`.marker.${layer}`).forEach(marker=>marker.classList.toggle('layer-hidden',!toggle.checked));
+ });
+}));
+
+document.querySelectorAll('[data-open-response]').forEach(button=>button.addEventListener('click',()=>show('response')));

@@ -15,67 +15,50 @@
 
 <main>
 <section id="dashboard" class="view active">
-  <div class="dashboard-head">
-    <div><span class="eyebrow">Operations Control</span><h2>Incident Dashboard</h2></div>
-    <div class="dashboard-time"><span>Local time</span><time id="dashboardClock" aria-live="off">10:01&nbsp;&nbsp;03.09.2026</time></div>
+  <div class="overview-head">
+    <div><span class="eyebrow">Operations Control</span><h2>Overview</h2></div>
+    <div class="dashboard-time"><span>Local time</span><time id="dashboardClock" aria-live="off">10:51&nbsp;&nbsp;03.09.2026</time></div>
   </div>
-  <button class="back-button" type="button" aria-label="Zurück">◀</button>
 
-  <div class="case-board" aria-label="Aktiver Demo-Case">
-    <div class="case-table" role="table" aria-label="Case-Übersicht">
-      <div class="case-row case-header" role="row">
-        <b role="columnheader">Counter</b><b role="columnheader">Case</b><b role="columnheader">Trip</b>
-        <b role="columnheader">Type</b><b role="columnheader">Customer</b><b role="columnheader">Problem</b><b role="columnheader">Level</b>
-      </div>
-      <div class="case-row case-data" role="row">
-        <span role="cell">001</span><span role="cell">0309-001</span><span role="cell">BER → MUC</span>
-        <span role="cell">Trent 1000</span><span role="cell">LHA</span><span role="cell">Fatal Bird Strike</span><span role="cell" class="level-pill">1</span>
-      </div>
-    </div>
+  <p class="overview-notice"><b>DEMO / MOCK DATA</b> · Concept prototype · Human-in-the-loop: final decisions remain with authorized experts.</p>
 
-    <p class="demo-label"><span>DEMO DATA</span> Human-in-the-loop · Entscheidung durch autorisierte Experten</p>
-    <div class="dashboard-grid">
-      <article class="dashboard-tile visualisation-tile">
-        <div class="tile-heading"><span>01</span><h3>Visualisation</h3></div>
-        <div class="engine-visual" role="img" aria-label="Schematische Darstellung einer beschädigten Triebwerksschaufel">
-          <div class="engine-core"></div>
-          <div class="engine-damage">!</div>
-        </div>
-      </article>
+  <div class="world-map" aria-label="Geo Resource Map mit Demo-Cases, Teams und Ersatzteilen" role="region">
+    <div class="map-grid" aria-hidden="true"></div>
+    <div class="continent north-america" aria-hidden="true"></div><div class="continent south-america" aria-hidden="true"></div>
+    <div class="continent europe" aria-hidden="true"></div><div class="continent africa" aria-hidden="true"></div>
+    <div class="continent asia" aria-hidden="true"></div><div class="continent australia" aria-hidden="true"></div>
+    <span class="map-label atlantic">ATLANTIC</span><span class="map-label pacific">PACIFIC</span><span class="map-label indian">INDIAN OCEAN</span>
 
-      <article class="dashboard-tile notes-tile">
-        <div class="tile-heading"><span>02</span><h3>Notes</h3></div>
-        <p>Bad impact at 3000 ft<br>at 132 knots,<br>climbing angle 32°</p>
-      </article>
+    <button class="marker case priority-1" style="--x:51%;--y:37%" data-case="Case 003" aria-label="Case 003, Priorität 1"><span></span></button>
+    <button class="marker case priority-2" style="--x:62%;--y:57%" data-case="Case 007" aria-label="Case 007, Priorität 2"><span></span></button>
+    <button class="marker case priority-3" style="--x:41%;--y:26%" data-case="Case 009" aria-label="Case 009, Priorität 3"><span></span></button>
+    <button class="marker case priority-4" style="--x:27%;--y:46%" data-case="Case 011" aria-label="Case 011, Priorität 4"><span></span></button>
+    <button class="marker case priority-4" style="--x:70%;--y:41%" data-case="Case 012" aria-label="Case 012, Priorität 4"><span></span></button>
+    <button class="marker case priority-1" style="--x:80%;--y:76%" data-case="Case 005" aria-label="Case 005, Priorität 1"><span></span></button>
+    <button class="marker case priority-4" style="--x:36%;--y:80%" data-case="Case 006" aria-label="Case 006, Priorität 4"><span></span></button>
 
-      <article class="dashboard-tile weather-tile">
-        <div class="tile-heading"><span>03</span><h3>Weather</h3></div>
-        <div class="weather-map" role="img" aria-label="Schematische Wetterkarte">
-          <span class="cloud cloud-one"></span><span class="cloud cloud-two"></span><span class="cloud cloud-three"></span>
-          <i class="route-line"></i><b>BER</b><b>MUC</b>
-        </div>
-      </article>
+    <button class="marker part" style="--x:49%;--y:43%" aria-label="Ersatzteil verfügbar"></button>
+    <button class="marker part" style="--x:30%;--y:57%" aria-label="Ersatzteil verfügbar"></button>
+    <button class="marker part" style="--x:44%;--y:62%" aria-label="Ersatzteil verfügbar"></button>
+    <button class="marker team" style="--x:52%;--y:45%" aria-label="Team verfügbar"></button>
+    <button class="marker team" style="--x:64%;--y:58%" aria-label="Team verfügbar"></button>
+    <button class="marker team" style="--x:31%;--y:58%" aria-label="Team verfügbar"></button>
 
-      <article class="dashboard-tile team-tile">
-        <div class="tile-heading"><span>04</span><h3>Solving/Team</h3></div>
-        <p><b>Action:</b> Part replacement</p>
-        <p><b>Field Service:</b> Thomas, Paul</p>
-        <button type="button">Historical Aircraft Events <span>▶</span></button>
-      </article>
+    <div class="case-popover" id="casePopover"><b>Case 003</b><span>Engine: Trent XWB</span><span>Priority: 1</span><span>Status: in progress</span><button type="button" data-open-response>Open response workspace →</button></div>
+    <div class="map-legend" aria-label="Legende"><span><i class="dot p1"></i>Priority 1</span><span><i class="dot p2"></i>Priority 2</span><span><i class="dot p3"></i>Priority 3</span><span><i class="dot p4"></i>Priority 4</span><span><i class="triangle"></i>Parts</span><span><i class="diamond"></i>Teams</span></div>
+    <div class="map-controls" aria-hidden="true"><button>+</button><button>−</button><button>⌖</button></div>
+  </div>
 
-      <article class="dashboard-tile parts-tile">
-        <div class="tile-heading"><span>05</span><h3>Spare Parts</h3></div>
-        <p>Heatshield<br>Blades</p>
-      </article>
-
-      <article class="dashboard-tile flight-tile">
-        <div class="tile-heading"><span>06</span><h3>Flighttrip</h3></div>
-        <div class="flight-map" role="img" aria-label="Schematische Flugroute Berlin nach München">
-          <span class="airport airport-ber">BER</span><span class="plane">✈</span><span class="airport airport-muc">MUC</span>
-          <i></i>
-        </div>
-      </article>
-    </div>
+  <div class="overview-bottom">
+    <article class="overview-card metric-card"><span>Active cases</span><strong>12</strong><small>Average duration</small><b>26h</b></article>
+    <article class="overview-card"><span>Priority levels</span><ul class="priority-list"><li><i class="dot p1"></i><b>1</b><em>3 cases</em></li><li><i class="dot p2"></i><b>2</b><em>2 cases</em></li><li><i class="dot p3"></i><b>3</b><em>1 case</em></li><li><i class="dot p4"></i><b>4</b><em>6 cases</em></li></ul></article>
+    <article class="overview-card recommendations"><span>Recommendations</span><p>• Plan 4 mechanics</p><p>• Send parts for Cases 002, 003</p><p>• Parts unavailable for Cases 001, 005</p></article>
+    <aside class="overview-actions">
+      <label><input type="checkbox" checked data-layer="case"><i></i><span>Cases</span></label>
+      <label><input type="checkbox" checked data-layer="team,part"><i></i><span>Teams and parts</span></label>
+      <label><input type="checkbox" data-layer="weather"><i></i><span>Weather</span></label>
+      <button type="button" data-open-response>Case dashboard <span>→</span></button>
+    </aside>
   </div>
 </section>
 

@@ -4,7 +4,7 @@
 Team 3 – In-Flight Shutdown
 
 ## Team members mentioned
-Elias, Jann, David and Mazen
+Elyas, Jan, Davyd and Mazen
 
 ## Challenge
 The team wants to understand and improve the information flow around an In-Flight Shutdown.
@@ -40,14 +40,14 @@ They were deliberately merged into two features:
 Phone and email are one feature because both are converted into text and then processed by the same extraction logic.
 
 Input channels:
-- phone → speech-to-text
-- email → text
+- phone : speech to text
+- email : text
 
 Output:
 - one structured case
 - extracted metadata
 - missing information
-- follow-up needs
+- follow up needs
 - priority suggestion
 
 ### 2. Incident Response & Resource Intelligence
