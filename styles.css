@@ -42,3 +42,46 @@ main{max-width:1040px;padding:20px}
 
 @media(max-width:900px){main{max-width:720px}.dashboard-grid{grid-template-columns:1fr 1fr}.dashboard-head{padding:14px 18px}.dashboard-head h2{font-size:30px}.dashboard-head time{font-size:18px}}
 @media(max-width:620px){main{padding:10px}.dashboard-head{flex-direction:row;align-items:center}.dashboard-head h2{font-size:26px}.dashboard-head time{font-size:14px}.dashboard-grid{grid-template-columns:1fr;padding:10px;gap:10px}.dashboard-tile{min-height:145px}.case-board{border-radius:14px}}
+
+/* Modern aviation operations theme */
+:root{--navy:#0b1f33;--navy-2:#123452;--cyan:#22b8b5;--cyan-soft:#dff7f5;--ink:#142333;--muted:#69808f;--line:#dbe5ea;--surface:#fff;--danger:#e14f55}
+body{background:#f4f7fa;color:var(--ink)}
+header{background:var(--navy);border-bottom:1px solid #ffffff18}
+header h1{letter-spacing:-.3px}
+nav{position:sticky;top:0;z-index:5;gap:4px;background:#ffffffed;backdrop-filter:blur(14px);box-shadow:0 4px 18px #0b1f330d}
+nav button{border-radius:999px;background:transparent;color:#5d7381}
+nav button.active{background:var(--navy);color:#fff}
+main{max-width:1120px;padding:26px 22px 42px}
+.dashboard-head{position:relative;overflow:hidden;padding:22px 26px;border:0;border-radius:22px;background:linear-gradient(120deg,var(--navy),var(--navy-2));color:#fff;box-shadow:0 18px 40px #0b1f3326}
+.dashboard-head:after{content:"";position:absolute;right:-70px;top:-120px;width:300px;height:300px;border:70px solid #22b8b518;border-radius:50%}
+.dashboard-head>div{position:relative;z-index:1}
+.eyebrow{display:block;margin-bottom:6px;color:#72d8d4;font-size:11px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase}
+.dashboard-head h2{font-size:34px;font-weight:650;letter-spacing:-1px}
+.dashboard-time{display:flex;align-items:flex-end;flex-direction:column;gap:5px}
+.dashboard-time span{color:#a9bdc9;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+.dashboard-head time{font-size:19px;font-variant-numeric:tabular-nums}
+.back-button{display:grid;place-items:center;width:34px;height:34px;margin:10px 0;padding:0;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--navy);font-size:14px;box-shadow:0 4px 12px #0b1f3310}
+.case-board{border:1px solid var(--line);border-radius:22px;background:var(--surface);box-shadow:0 16px 44px #16354d12}
+.case-header{border:0;background:#f7f9fb;color:var(--muted);font-size:11px;letter-spacing:1px}
+.case-data{border-top:1px solid var(--line);background:#fff;color:var(--ink);font-size:16px}
+.case-data span:nth-child(2),.case-data span:nth-child(6){color:var(--navy);font-weight:800}
+.level-pill{background:var(--danger);box-shadow:0 0 0 5px #e14f5514}
+.demo-label{display:flex;align-items:center;gap:9px;border:0;border-top:1px solid var(--line);background:#fbfcfd;color:var(--muted)}
+.demo-label span{padding:3px 7px;border-radius:5px;background:#fff1cf;color:#876318;font-size:9px;font-weight:900;letter-spacing:1px}
+.dashboard-grid{gap:14px;padding:16px;background:#f7f9fb}
+.dashboard-tile{min-height:168px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:0 7px 22px #17384e0b;transition:transform .18s ease,box-shadow .18s ease}
+.dashboard-tile:hover{transform:translateY(-2px);box-shadow:0 12px 30px #17384e16}
+.tile-heading{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.tile-heading>span{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:var(--cyan-soft);color:#087b78;font-size:10px;font-weight:900}
+.dashboard-tile h3{margin:0;color:var(--navy);font-size:18px;font-weight:750;letter-spacing:-.2px}
+.dashboard-tile p{color:#435b69;font-size:14px}
+.engine-visual,.weather-map,.flight-map{height:108px;border:1px solid #d8e3e8;box-shadow:none}
+.engine-visual{background:repeating-conic-gradient(from 0deg at 32% 50%,#e8eef0 0 8deg,#536570 9deg 16deg)}
+.engine-damage{background:var(--danger)}
+.weather-map{background:linear-gradient(145deg,#40758d,#72a078 52%,#b0c789)}
+.team-tile button{border:1px solid #b7e4e2;background:var(--cyan-soft);color:#086e6b;transition:background .15s ease}
+.team-tile button:hover{background:#c8efed}
+.parts-tile p{display:inline-block;padding:9px 12px;border-left:3px solid var(--cyan);border-radius:0 8px 8px 0;background:#f3fbfa;color:var(--navy);font-size:18px}
+.flight-map{background:linear-gradient(#c8e1e9 0 28%,#9ab988 29% 100%)}
+
+@media(max-width:620px){.dashboard-head{align-items:flex-start;flex-direction:column}.dashboard-time{align-items:flex-start}.dashboard-head h2{font-size:28px}.case-board{border-radius:18px}.dashboard-grid{padding:12px}}
