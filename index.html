@@ -114,17 +114,48 @@
   <p>Telefon und E-Mail werden in dieselbe strukturierte Case-Logik überführt.</p>
   <div class="two">
     <article>
-      <div class="tabs"><button class="active">Telefon / Speech-to-Text</button><button>E-Mail / Text</button></div>
+      <div class="tabs"><button class="active" data-tab="phone">Telefon / Speech-to-Text</button><button data-tab="email">E-Mail / Text</button></div>
+
+      <div class="whisper-box" id="whisperBox">
+        <div class="whisper-head">
+          <div><span class="whisper-eyebrow">Local AI Transcription</span><b>faster-whisper</b></div>
+          <span class="whisper-status" id="whisperStatus">Bereit</span>
+        </div>
+        <div class="whisper-controls">
+          <button type="button" id="recStart" class="rec-start">● Aufnahme starten</button>
+          <button type="button" id="recStop" class="rec-stop" disabled>■ Stoppen &amp; transkribieren</button>
+        </div>
+        <div class="whisper-meta">
+          <label>Sprache
+            <select id="whisperLang">
+              <option value="">Automatisch</option>
+              <option value="de">Deutsch</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <time id="recTimer">00:00</time>
+        </div>
+        <p class="whisper-note">Audio wird nur an den lokal gestarteten Whisper-Dienst übertragen.</p>
+      </div>
+
       <label>Eingehende Information</label>
       <textarea id="sourceText">Pilot meldet Engine Shutdown auf Flug LH412 von New York nach Frankfurt. Boeing 787-9, Trent 1000. Ereignis um 09:42 UTC in FL350 über dem Nordatlantik. Crew meldete vorher erhöhte Vibrationen und EGT-Anstieg. Engine 2 wurde abgeschaltet. Flug wird nach Shannon umgeleitet. Keine Verletzten. Ölstand und detaillierte EHM-Daten liegen aktuell noch nicht vor.</textarea>
       <button id="extract">Case automatisch erstellen</button>
     </article>
     <article>
       <h3>Strukturierter Case</h3>
-      <div id="fields" class="fields"></div>
+      <div id="fields" class="fields">Noch keine Extraktion.</div>
+      <div class="case-actions">
+        <button type="button" id="saveCase" class="ghost-btn">Änderungen speichern</button>
+        <span class="save-hint" id="saveHint" hidden>Bitte fehlende Angaben auswählen</span>
+      </div>
       <h3>Fehlende Informationen</h3>
       <div id="missing">Noch keine Extraktion.</div>
-      <button id="toResponse" disabled>Weiter zu Analyse & Ressourcen</button>
+      <div class="missing-actions">
+        <button type="button" id="askFollowup" class="ghost-btn" disabled>Rückfrage erstellen</button>
+        <button id="toResponse" disabled>Weiter zu Analyse &amp; Ressourcen</button>
+      </div>
+      <div id="followupOut"></div>
     </article>
   </div>
 </section>

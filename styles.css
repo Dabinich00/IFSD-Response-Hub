@@ -149,3 +149,43 @@ main{max-width:1120px;padding:26px 22px 42px}
 .demo-label #dCaseName{padding:0;background:none;color:#2b8f8a;font-size:inherit;font-weight:800;letter-spacing:0;text-transform:none}
 .dash-to-response{margin-left:auto;padding:4px 12px;border:1px solid #b7e4e2;border-radius:999px;background:var(--cyan-soft);color:#086e6b;font-size:12px;font-weight:700}
 .dash-to-response:hover{background:#c8efed}
+
+/* ---------- Intake v0.2: Whisper widget, editable fields, missing checklist ---------- */
+.whisper-box{margin:0 0 14px;padding:14px;border:1px solid #d9e6e8;border-radius:14px;background:#f3f8f9}
+.whisper-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.whisper-eyebrow{display:block;margin-bottom:2px;color:#6b8b90;font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase}
+.whisper-head b{font-size:18px;color:#123452}
+.whisper-status{padding:4px 10px;border-radius:999px;background:#e4edef;color:#4e666e;font-size:12px;font-weight:700;white-space:nowrap}
+.whisper-status.active{background:#123452;color:#fff}
+.whisper-controls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.rec-start{background:#0b1f33;color:#fff}
+.rec-stop{background:#f2c3c6;color:#7a2f34}
+.rec-start:disabled,.rec-stop:disabled{opacity:.55;cursor:default}
+.whisper-meta{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.whisper-meta label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#4e666e}
+.whisper-meta select{padding:6px 8px;border:1px solid #ccd8dc;border-radius:8px;font:inherit;font-weight:600}
+.whisper-meta time{font-variant-numeric:tabular-nums;font-size:20px;font-weight:700;color:#123452}
+.whisper-note{margin:10px 0 0;color:#7d8b90;font-size:12px}
+
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:5px;background:none;border:0;padding:0}
+.field small{color:#75878e;font-size:12px}
+.field input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d5e0e4;border-radius:9px;background:#fff;font:inherit;font-weight:700;color:#17313b}
+.field input:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px #22b8b522}
+.field.unknown input{font-weight:400;color:#9aabb0}
+
+.case-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:14px 0 6px}
+.ghost-btn{background:#eef3f4;color:#294652;border:1px solid #d5e0e4}
+.ghost-btn:hover{background:#e3ebec}
+.ghost-btn:disabled{opacity:.5;cursor:default}
+.save-hint{padding:5px 12px;border-radius:999px;background:#fde3e4;color:#a3383d;font-size:12px;font-weight:700}
+
+.miss{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:8px 0;border:1px solid #ecd9a6;border-radius:10px;background:#fff8e8;font-size:14px;cursor:pointer}
+.miss input{width:16px;height:16px;accent-color:#123452;cursor:pointer}
+.completeness-line{margin-top:10px;color:#4e666e;font-size:13px}
+.ok-line{padding:12px;border:1px solid #a9d6b7;border-radius:10px;background:#eaf7ef;color:#1f6b3a;font-weight:700}
+.missing-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.followup{margin-top:12px;padding:12px 14px;border:1px solid #b7e4e2;border-radius:12px;background:#f3fbfa}
+.followup b{color:#086e6b;font-size:13px}
+.followup ul{margin:8px 0 0;padding-left:18px}
+.followup li{margin:4px 0;font-size:13px;color:#17313b}

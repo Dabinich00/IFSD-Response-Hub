@@ -215,76 +215,187 @@ function setActiveCase(c) {
   setTimeout(() => respMap.invalidateSize(), 60);
 }
 
-/* ---------- Intake: derive structured case + missing info from the text ---------- */
+/* ---------- Intake: derive an editable structured case from the text ---------- */
+const esc = s => String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const AIRLINES = { LH: 'LHA', BA: 'BAW', AF: 'AFR', KL: 'KLM', EK: 'UAE', QF: 'QFA', AA: 'AAL', DL: 'DAL', UA: 'UAL', LX: 'SWR', AI: 'AIC', QR: 'QTR', SQ: 'SIA', LA: 'LAN' };
+
+// Core fields become editable inputs in the structured case.
+const CORE_FIELDS = [
+  { label: 'Flugnummer', get: t => (t.match(/\b([A-Z]{2}\d{2,4})\b/) || [])[1] },
+  { label: 'Flugzeug', get: t => (t.match(/\b((?:Boeing|Airbus)\s+[A-Z]?\d{3}(?:-\d+)?)\b/i) || [])[1] },
+  { label: 'Triebwerk', get: t => (t.match(/\b((?:Trent|Pearl|BR)\s?\d{2,4})\b/i) || [])[1] },
+  { label: 'Zeitpunkt', get: t => (t.match(/\b(\d{1,2}:\d{2}\s*UTC)\b/i) || [])[1] },
+  { label: 'Flughöhe', get: t => (t.match(/\b(FL\d{2,3})\b/i) || [])[1] },
+  { label: 'Ort', get: t => (t.match(/\b(Nordatlantik|Südatlantik|Nordsee|Ärmelkanal|Pazifik|Indischer Ozean|Mittelmeer|Atlantik)\b/i) || [])[1] },
+  { label: 'Route', get: t => { const m = t.match(/von\s+([A-ZÄÖÜ][A-Za-zäöü]+(?:\s[A-ZÄÖÜ][A-Za-zäöü]+)?)\s+nach\s+([A-ZÄÖÜ][A-Za-zäöü]+)/); return m ? `${m[1]} → ${m[2]}` : null; } },
+  { label: 'Kunde', get: t => { const m = t.match(/\b([A-Z]{2})\d{2,4}\b/); return m ? (AIRLINES[m[1]] || m[1]) : null; } },
+  { label: 'Problem', get: t => /vogelschlag|bird\s?strike/i.test(t) ? 'Bird Strike' : /\b(fire|feuer|flame\s?out)\b/i.test(t) ? 'Engine Fire' : /\b(shutdown|abgeschaltet|ifsd)\b/i.test(t) ? 'Engine Shutdown' : /vibration/i.test(t) ? 'High Vibration' : /öldruck|oil pressure/i.test(t) ? 'Oil Pressure' : null }
+];
+// Soft fields become the "Fehlende Informationen" checklist when not stated.
+const MISSING_FIELDS = [
+  { label: 'Ölstand / Oil-System-Informationen', get: t => (t.match(/öl(?:stand|druck)[^.]*?\b(normal|ok|niedrig|hoch|\d+\s?%)/i) || [])[1] },
+  { label: 'vollständiger EHM-Datensatz', get: t => /EHM[- ]?daten\s*(?:liegen vor|verfügbar|:)/i.test(t) ? 'vorhanden' : null },
+  { label: 'bestätigtes Crew Statement', get: t => /crew[- ]?statement\s*(?:bestätigt|confirmed|liegt vor)/i.test(t) ? 'bestätigt' : null }
+];
+const FOLLOWUP_Q = {
+  'Ölstand / Oil-System-Informationen': 'Bitte aktuellen Ölstand und Oil-System-Status nachreichen.',
+  'vollständiger EHM-Datensatz': 'Vollständigen EHM-Datensatz / Sensor-Zeitreihe anfordern.',
+  'bestätigtes Crew Statement': 'Bestätigtes Crew-Statement einholen.'
+};
+
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
   b.classList.add('active');
+  const box = document.getElementById('whisperBox');
+  if (box) box.hidden = b.dataset.tab === 'email';
 });
 
-// Each field extracts a value from the text or returns null. Missing info is
-// then DERIVED from what was actually found — not a fixed list.
-const INTAKE_FIELDS = [
-  { key: 'Flugnummer', label: 'Flugnummer', get: t => (t.match(/\b([A-Z]{2}\d{2,4})\b/) || [])[1] },
-  { key: 'Flugzeug', label: 'Flugzeugtyp', get: t => (t.match(/\b((?:Boeing|Airbus)\s+[A-Z]?\d{3}(?:-\d+)?)\b/i) || [])[1] },
-  { key: 'Triebwerk', label: 'Triebwerk', get: t => (t.match(/\b((?:Trent|Pearl|BR)\s?\d{2,4})\b/i) || [])[1] },
-  { key: 'Zeitpunkt', label: 'Zeitpunkt', get: t => (t.match(/\b(\d{1,2}:\d{2}\s*UTC)\b/i) || [])[1] },
-  { key: 'Flughöhe', label: 'Flughöhe', get: t => (t.match(/\b(FL\d{2,3})\b/i) || [])[1] },
-  { key: 'Ausweichflughafen', label: 'Ausweichflughafen', get: t => { const m = t.match(/(?:umgeleitet nach|diverted to|ausweichen nach)\s+([A-ZÄÖÜ][a-zäöü]+)|nach\s+([A-ZÄÖÜ][a-zäöü]+)\s+umgeleitet/); return m && (m[1] || m[2]); } },
-  { key: 'Ölstand', label: 'Ölstand / Oil-System', get: t => (t.match(/öl(?:stand|druck)[^.]*?\b(normal|ok|niedrig|hoch|\d+\s?%)/i) || [])[1] },
-  { key: 'EHM-Datensatz', label: 'vollständiger EHM-Datensatz', get: t => /EHM[- ]?daten\s*(?:liegen vor|verfügbar|:)/i.test(t) ? 'vorhanden' : null },
-  { key: 'Crew Statement', label: 'bestätigtes Crew Statement', get: t => /crew[- ]?statement\s*(?:bestätigt|confirmed|liegt vor)/i.test(t) ? 'bestätigt' : null }
-];
-
-document.getElementById('extract').onclick = () => {
-  const t = document.getElementById('sourceText').value;
-  const found = {}, missing = [];
-  INTAKE_FIELDS.forEach(f => {
-    const v = f.get(t);
-    if (v) found[f.key] = v; else missing.push(f.label);
-  });
-
-  const critical = /\b(shutdown|abgeschaltet|fire|feuer|flame\s?out)\b/i.test(t);
-  const completeness = Math.round((Object.keys(found).length / INTAKE_FIELDS.length) * 100);
-
-  // Structured case fields
-  const shown = {
-    'Case-ID': 'IFSD-2026-0903-017',
-    'Priorität': critical ? 'CRITICAL' : 'REVIEW',
-    ...Object.fromEntries(INTAKE_FIELDS.map(f => [f.label, found[f.key] || 'nicht erkannt']))
-  };
-  document.getElementById('fields').innerHTML = Object.entries(shown)
-    .map(([k, v]) => `<div class="field"><small>${k}</small><b>${v}</b></div>`).join('');
-  document.getElementById('missing').innerHTML = missing.length
-    ? missing.map(x => `<div class="miss">⚠ ${x}</div>`).join('') +
+function renderFields(values) {
+  document.getElementById('fields').innerHTML = values.map(([k, v]) =>
+    `<label class="field${v ? '' : ' unknown'}"><small>${k}</small><input data-k="${esc(k)}" value="${v ? esc(v) : ''}" placeholder="nicht erkannt"></label>`).join('');
+}
+function renderMissing(missing, completeness) {
+  const box = document.getElementById('missing');
+  box.innerHTML = missing.length
+    ? missing.map(m => `<label class="miss"><input type="checkbox" data-miss="${esc(m)}"><span>${m}</span></label>`).join('') +
       `<div class="completeness-line">Case Completeness: <b>${completeness}%</b> · ${missing.length} Feld(er) offen</div>`
-    : `<div class="ok-line">✓ Alle Pflichtfelder erkannt (100%)</div>`;
-
-  // Build a real case object and thread it through the app (map + response).
-  const liveCase = {
-    id: 'IFSD-2026-0903-017', flight: found['Flugnummer'] || 'LH412',
-    aircraft: found['Flugzeug'] || 'Boeing 787-9', engine: found['Triebwerk'] || 'Trent 1000',
-    priority: critical ? 1 : 3, status: 'live intake', region: /nordatlantik/i.test(t) ? 'North Atlantic' : 'in Bearbeitung',
-    event: { lat: 52.5, lng: -20 }, diversion: { name: found['Ausweichflughafen'] || 'Shannon', iata: 'SNN', lat: 52.70, lng: -8.92 },
+    : `<div class="ok-line">✓ Alle Pflichtfelder erkannt (${completeness}%)</div>`;
+  box.querySelectorAll('[data-miss]').forEach(cb => cb.addEventListener('change', updateMissingState));
+  updateMissingState();
+}
+function updateMissingState() {
+  const total = document.querySelectorAll('[data-miss]').length;
+  const checked = document.querySelectorAll('[data-miss]:checked').length;
+  document.getElementById('askFollowup').disabled = checked === 0;
+  document.getElementById('saveHint').hidden = !(total > 0 && checked === 0);
+}
+function currentFieldValues() {
+  const o = {};
+  document.querySelectorAll('#fields input[data-k]').forEach(i => o[i.dataset.k] = i.value.trim());
+  return o;
+}
+function buildLiveCase() {
+  const f = currentFieldValues();
+  const t = document.getElementById('sourceText').value;
+  const critical = /critical/i.test(f['Priorität'] || '') || /\b(shutdown|abgeschaltet|fire|feuer)\b/i.test(t);
+  const missing = [...document.querySelectorAll('[data-miss]')].map(x => x.dataset.miss);
+  const lc = {
+    id: f['Case-ID'] || 'IFSD-2026-0903-017', counter: '—', caseId: f['Case-ID'] || 'IFSD-2026-0903-017',
+    flight: f['Flugnummer'] || 'LH412', aircraft: f['Flugzeug'] || 'Boeing 787-9', engine: f['Triebwerk'] || 'Trent 1000',
+    priority: critical ? 1 : 3, status: 'live intake', customer: f['Kunde'] || '—', problem: f['Problem'] || 'Under review',
+    trip: f['Route'] || '—', region: f['Ort'] || 'in Bearbeitung',
+    event: { lat: 52.5, lng: -20 }, diversion: { name: 'Shannon', iata: 'SNN', lat: 52.70, lng: -8.92 },
+    notes: [document.getElementById('sourceText').value.slice(0, 90) + '…'], action: 'Prüfen', fieldService: '—', spareParts: ['—'],
     ehm: [['EGT', '↑ 14%', true], ['Vibration', 'hoch', true], ['Oil Pressure', 'normal*', false]],
-    completeness, missing, similar: [['2025-041', 76], ['2024-118', 61], ['2023-302', 53]]
+    completeness: window.__completeness ?? 82, missing, similar: [['2025-041', 76], ['2024-118', 61], ['2023-302', 53]]
   };
-  liveCase.resources = resourcesFor(liveCase);
-
-  // Drop / update a live marker on the dashboard map so the same case is visible there too.
+  lc.resources = resourcesFor(lc);
+  return lc;
+}
+function refreshLive() {
+  const lc = buildLiveCase();
+  window.__liveCase = lc;
   if (dashMap) {
     if (liveMarker) dashLayers.case.removeLayer(liveMarker);
-    liveMarker = caseMarker(liveCase);
+    liveMarker = caseMarker(lc);
     liveMarker.setStyle({ color: '#8a1c1c', weight: 4 });
     liveMarker.addTo(dashLayers.case);
   }
+}
 
-  window.__liveCase = liveCase;
+document.getElementById('extract').onclick = () => {
+  const t = document.getElementById('sourceText').value;
+  const coreValues = CORE_FIELDS.map(f => [f.label, f.get(t) || null]);
+  const foundCore = coreValues.filter(([, v]) => v).length;
+  const missing = MISSING_FIELDS.filter(f => !f.get(t)).map(f => f.label);
+  const foundSoft = MISSING_FIELDS.length - missing.length;
+  const critical = /\b(shutdown|abgeschaltet|fire|feuer|flame\s?out)\b/i.test(t);
+  const completeness = Math.round((foundCore + foundSoft) / (CORE_FIELDS.length + MISSING_FIELDS.length) * 100);
+  window.__completeness = completeness;
+
+  renderFields([['Case-ID', 'IFSD-2026-0903-017'], ['Priorität', critical ? 'CRITICAL' : 'REVIEW'], ...coreValues]);
+  renderMissing(missing, completeness);
+  document.getElementById('followupOut').innerHTML = '';
+  refreshLive();
   document.getElementById('toResponse').disabled = false;
 };
+
+document.getElementById('saveCase').onclick = () => {
+  refreshLive();
+  const btn = document.getElementById('saveCase'), old = btn.textContent;
+  btn.textContent = 'Gespeichert ✓';
+  setTimeout(() => { btn.textContent = old; }, 1500);
+};
+
+document.getElementById('askFollowup').onclick = () => {
+  const items = [...document.querySelectorAll('[data-miss]:checked')].map(x => x.dataset.miss);
+  if (!items.length) { document.getElementById('saveHint').hidden = false; return; }
+  document.getElementById('followupOut').innerHTML =
+    `<div class="followup"><b>Rückfrage erstellt · an ${document.querySelector('#fields input[data-k="Kunde"]')?.value || 'Airline'} / Crew</b><ul>` +
+    items.map(i => `<li>${FOLLOWUP_Q[i] || `„${i}" nachfordern.`}</li>`).join('') + `</ul></div>`;
+};
+
 document.getElementById('toResponse').onclick = () => {
-  if (window.__liveCase) setActiveCase(window.__liveCase);
+  refreshLive();
+  setActiveCase(window.__liveCase);
   show('response');
 };
+
+/* ---------- Local Whisper transcription (faster-whisper webservice) ---------- */
+const WHISPER_URL = 'http://localhost:9000/asr';
+let mediaRecorder, recChunks = [], recTimerInt, recSeconds = 0;
+function setWhisper(txt, active) {
+  const el = document.getElementById('whisperStatus');
+  el.textContent = txt;
+  el.classList.toggle('active', !!active);
+}
+function updateRecTimer() {
+  const m = String(Math.floor(recSeconds / 60)).padStart(2, '0');
+  const s = String(recSeconds % 60).padStart(2, '0');
+  document.getElementById('recTimer').textContent = `${m}:${s}`;
+}
+document.getElementById('recStart').onclick = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    recChunks = [];
+    mediaRecorder.ondataavailable = e => recChunks.push(e.data);
+    mediaRecorder.onstop = transcribeRecording;
+    mediaRecorder.start();
+    setWhisper('Aufnahme läuft…', true);
+    document.getElementById('recStart').disabled = true;
+    document.getElementById('recStop').disabled = false;
+    recSeconds = 0; updateRecTimer();
+    recTimerInt = setInterval(() => { recSeconds++; updateRecTimer(); }, 1000);
+  } catch (e) {
+    setWhisper('Kein Mikrofonzugriff', false);
+  }
+};
+document.getElementById('recStop').onclick = () => {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(tr => tr.stop());
+  }
+  clearInterval(recTimerInt);
+  document.getElementById('recStart').disabled = false;
+  document.getElementById('recStop').disabled = true;
+};
+async function transcribeRecording() {
+  setWhisper('Transkribiere…', true);
+  const lang = document.getElementById('whisperLang').value;
+  const fd = new FormData();
+  fd.append('audio_file', new Blob(recChunks, { type: 'audio/webm' }), 'audio.webm');
+  const url = `${WHISPER_URL}?task=transcribe&output=txt${lang ? `&language=${lang}` : ''}`;
+  try {
+    const res = await fetch(url, { method: 'POST', body: fd });
+    if (!res.ok) throw new Error(res.status);
+    const text = (await res.text()).trim();
+    if (text) document.getElementById('sourceText').value = text;
+    setWhisper('Fertig ✓', false);
+  } catch (e) {
+    setWhisper('Whisper-Dienst nicht erreichbar (lokal starten)', false);
+  }
+}
 
 /* ---------- Clock ---------- */
 function updateDashboardClock() {
