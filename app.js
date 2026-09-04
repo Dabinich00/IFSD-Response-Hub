@@ -218,18 +218,39 @@ function setActiveCase(c) {
 /* ---------- Intake: derive an editable structured case from the text ---------- */
 const esc = s => String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;');
 const AIRLINES = { LH: 'LHA', BA: 'BAW', AF: 'AFR', KL: 'KLM', EK: 'UAE', QF: 'QFA', AA: 'AAL', DL: 'DAL', UA: 'UAL', LX: 'SWR', AI: 'AIC', QR: 'QTR', SQ: 'SIA', LA: 'LAN' };
+// Small diversion-airport lookup so a live case follows the transcript on the map.
+const AIRPORTS = {
+  shannon: { name: 'Shannon', iata: 'SNN', lat: 52.70, lng: -8.92 },
+  reykjavik: { name: 'Reykjavík', iata: 'KEF', lat: 63.98, lng: -22.60 },
+  reykjavík: { name: 'Reykjavík', iata: 'KEF', lat: 63.98, lng: -22.60 },
+  keflavik: { name: 'Keflavík', iata: 'KEF', lat: 63.98, lng: -22.60 },
+  gander: { name: 'Gander', iata: 'YQX', lat: 48.94, lng: -54.57 },
+  boston: { name: 'Boston', iata: 'BOS', lat: 42.36, lng: -71.01 },
+  dublin: { name: 'Dublin', iata: 'DUB', lat: 53.43, lng: -6.27 },
+  london: { name: 'London', iata: 'LHR', lat: 51.47, lng: -0.45 },
+  frankfurt: { name: 'Frankfurt', iata: 'FRA', lat: 50.04, lng: 8.56 },
+  münchen: { name: 'München', iata: 'MUC', lat: 48.35, lng: 11.79 },
+  munich: { name: 'München', iata: 'MUC', lat: 48.35, lng: 11.79 },
+  dubai: { name: 'Dubai', iata: 'DXB', lat: 25.25, lng: 55.36 }
+};
+function extractDiversion(t) {
+  const m = t.match(/(?:umgeleitet nach|diverted to|ausweichen nach)\s+([A-ZÄÖÜ][A-Za-zäöü]+)|nach\s+([A-ZÄÖÜ][A-Za-zäöü]+)\s+umgeleitet/);
+  const name = m && (m[1] || m[2]);
+  if (name && AIRPORTS[name.toLowerCase()]) return AIRPORTS[name.toLowerCase()];
+  return AIRPORTS.shannon;
+}
 
 // Core fields become editable inputs in the structured case.
 const CORE_FIELDS = [
   { label: 'Flugnummer', get: t => (t.match(/\b([A-Z]{2}\d{2,4})\b/) || [])[1] },
   { label: 'Flugzeug', get: t => (t.match(/\b((?:Boeing|Airbus)\s+[A-Z]?\d{3}(?:-\d+)?)\b/i) || [])[1] },
-  { label: 'Triebwerk', get: t => (t.match(/\b((?:Trent|Pearl|BR)\s?\d{2,4})\b/i) || [])[1] },
+  { label: 'Triebwerk', get: t => (t.match(/\b((?:Trent|Pearl|BR)\s?(?:\d{2,4}|XWB))\b/i) || [])[1] },
   { label: 'Zeitpunkt', get: t => (t.match(/\b(\d{1,2}:\d{2}\s*UTC)\b/i) || [])[1] },
   { label: 'Flughöhe', get: t => (t.match(/\b(FL\d{2,3})\b/i) || [])[1] },
   { label: 'Ort', get: t => (t.match(/\b(Nordatlantik|Südatlantik|Nordsee|Ärmelkanal|Pazifik|Indischer Ozean|Mittelmeer|Atlantik)\b/i) || [])[1] },
   { label: 'Route', get: t => { const m = t.match(/von\s+([A-ZÄÖÜ][A-Za-zäöü]+(?:\s[A-ZÄÖÜ][A-Za-zäöü]+)?)\s+nach\s+([A-ZÄÖÜ][A-Za-zäöü]+)/); return m ? `${m[1]} → ${m[2]}` : null; } },
   { label: 'Kunde', get: t => { const m = t.match(/\b([A-Z]{2})\d{2,4}\b/); return m ? (AIRLINES[m[1]] || m[1]) : null; } },
-  { label: 'Problem', get: t => /vogelschlag|bird\s?strike/i.test(t) ? 'Bird Strike' : /\b(fire|feuer|flame\s?out)\b/i.test(t) ? 'Engine Fire' : /\b(shutdown|abgeschaltet|ifsd)\b/i.test(t) ? 'Engine Shutdown' : /vibration/i.test(t) ? 'High Vibration' : /öldruck|oil pressure/i.test(t) ? 'Oil Pressure' : null }
+  { label: 'Problem', get: t => /vogelschlag|bird\s?strike/i.test(t) ? 'Bird Strike' : /\b(fire|feuer|flame\s?out)\b|brand/i.test(t) ? 'Engine Fire' : /\b(shutdown|abgeschaltet|ifsd)\b/i.test(t) ? 'Engine Shutdown' : /ausfall|failure/i.test(t) ? 'Engine Failure' : /vibration/i.test(t) ? 'High Vibration' : /öldruck|oil pressure/i.test(t) ? 'Oil Pressure' : null }
 ];
 // Soft fields become the "Fehlende Informationen" checklist when not stated.
 const MISSING_FIELDS = [
@@ -276,6 +297,7 @@ function currentFieldValues() {
 function buildLiveCase() {
   const f = currentFieldValues();
   const t = document.getElementById('sourceText').value;
+  const div = extractDiversion(t);
   const critical = /critical/i.test(f['Priorität'] || '') || /\b(shutdown|abgeschaltet|fire|feuer)\b/i.test(t);
   const missing = [...document.querySelectorAll('[data-miss]')].map(x => x.dataset.miss);
   const lc = {
@@ -283,7 +305,7 @@ function buildLiveCase() {
     flight: f['Flugnummer'] || 'LH412', aircraft: f['Flugzeug'] || 'Boeing 787-9', engine: f['Triebwerk'] || 'Trent 1000',
     priority: critical ? 1 : 3, status: 'live intake', customer: f['Kunde'] || '—', problem: f['Problem'] || 'Under review',
     trip: f['Route'] || '—', region: f['Ort'] || 'in Bearbeitung',
-    event: { lat: 52.5, lng: -20 }, diversion: { name: 'Shannon', iata: 'SNN', lat: 52.70, lng: -8.92 },
+    event: { lat: div.lat + 2.2, lng: div.lng - 9 }, diversion: { name: div.name, iata: div.iata, lat: div.lat, lng: div.lng },
     notes: [document.getElementById('sourceText').value.slice(0, 90) + '…'], action: 'Prüfen', fieldService: '—', spareParts: ['—'],
     ehm: [['EGT', '↑ 14%', true], ['Vibration', 'hoch', true], ['Oil Pressure', 'normal*', false]],
     completeness: window.__completeness ?? 82, missing, similar: [['2025-041', 76], ['2024-118', 61], ['2023-302', 53]]
