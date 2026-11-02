@@ -1,0 +1,118 @@
+﻿import concurrent.futures
+import json
+import tempfile
+import threading
+import unittest
+import urllib.error
+import urllib.request
+from pathlib import Path
+from unittest.mock import patch
+import database
+import server
+
+class DatabaseTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.patch = patch.object(database, 'DB_PATH', Path(self.temp.name) / 'incidents.db')
+        self.patch.start()
+        database.initialize()
+        self.payload = {key: '' for key in database.FIELDS}
+        self.payload.update(source='Email', customer='Example Air', aircraftId='D-TEST',
+            problemNotes='Engine 2 shutdown', originalText='Original message',
+            engine2='ENG-123', priority='Pending')
+
+    def tearDown(self):
+        self.patch.stop()
+        self.temp.cleanup()
+
+    def test_all_fields_persist_and_id_is_server_assigned(self):
+        self.payload['caseId'] = 'FORGED'
+        row = database.create(self.payload)
+        self.assertRegex(row['caseId'], r'^IFSD-\d{4}-\d{4}-\d{6,}$')
+        database.initialize()
+        saved = database.get(row['caseId'])
+        for key in database.FIELDS:
+            self.assertEqual(saved[key], self.payload[key])
+        self.assertEqual(saved['revision'], 1)
+
+    def test_concurrent_ids_are_unique_and_not_reused(self):
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+            rows = list(pool.map(lambda _: database.create(self.payload), range(20)))
+        self.assertEqual(len({row['caseId'] for row in rows}), 20)
+        database.change(rows[-1]['caseId'], rows[-1], 'deleted')
+        new = database.create(self.payload)
+        self.assertNotIn(new['caseId'], [row['caseId'] for row in rows])
+
+    def test_update_conflict_trash_restore_and_history(self):
+        row = database.create(self.payload)
+        edited = database.change(row['caseId'], {**row, 'customer': 'Changed'})
+        self.assertEqual(edited['caseId'], row['caseId'])
+        self.assertEqual(edited['customer'], 'Changed')
+        with self.assertRaises(database.ConflictError):
+            database.change(row['caseId'], row)
+        deleted = database.change(row['caseId'], edited, 'deleted')
+        self.assertEqual(database.list_cases(), [])
+        self.assertEqual(len(database.list_cases(deleted=True)), 1)
+        with self.assertRaises(database.ConflictError):
+            database.change(row['caseId'], deleted)
+        restored = database.change(row['caseId'], deleted, 'restored')
+        self.assertIsNone(restored['deletedAt'])
+        self.assertEqual(len(database.list_cases('changed')), 1)
+        with database.connection() as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM incident_history').fetchone()[0], 4)
+
+    def test_validation_and_literal_search(self):
+        for changes in ({'source': 'Other'}, {'problemNotes': ' '}, {'engine1': []}, {'priority': 'urgent'}):
+            with self.assertRaises(ValueError):
+                database.create({**self.payload, **changes})
+        database.create(self.payload)
+        self.assertEqual(database.list_cases("' OR 1=1 --"), [])
+
+class APITests(DatabaseTests):
+    def setUp(self):
+        super().setUp()
+        self.httpd = server.ThreadingHTTPServer(('127.0.0.1', 0), server.IFSDHandler)
+        self.url = 'http://127.0.0.1:' + str(self.httpd.server_port)
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+
+    def tearDown(self):
+        self.httpd.shutdown()
+        self.httpd.server_close()
+        super().tearDown()
+
+    def request(self, path, method='GET', body=None):
+        req = urllib.request.Request(self.url + path, method=method,
+            data=json.dumps(body).encode() if body is not None else None,
+            headers={'Content-Type': 'application/json'})
+        try:
+            response = urllib.request.urlopen(req)
+        except urllib.error.HTTPError as error:
+            response = error
+        with response:
+            content = response.read()
+            return response.status, json.loads(content) if response.headers.get_content_type() == 'application/json' else content
+
+    def test_http_lifecycle(self):
+        status, row = self.request('/api/cases', 'POST', self.payload)
+        self.assertEqual(status, 201)
+        path = '/api/cases/' + row['caseId']
+        self.assertEqual(self.request(path)[1]['aircraftId'], 'D-TEST')
+        status, updated = self.request(path, 'PUT', {**row, 'engine1': 'NEW-123'})
+        self.assertEqual(status, 200)
+        self.assertEqual(updated['engine1'], 'NEW-123')
+        self.assertEqual(self.request(path, 'PUT', row)[0], 409)
+        status, deleted = self.request(path, 'DELETE', updated)
+        self.assertEqual(status, 200)
+        self.assertEqual(self.request('/api/cases')[1], [])
+        self.assertEqual(self.request(path + '/restore', 'POST', deleted)[0], 200)
+        self.assertEqual(self.request('/api/cases', 'POST', {})[0], 400)
+        self.assertEqual(self.request('/api/cases/does-not-exist')[0], 404)
+
+    def test_private_files_and_head_are_not_served(self):
+        for path in ('/data/incidents.db', '/data/incidents.db-journal', '/database.py', '/.git/config', '/%64ata/incidents.db', '/../server.py'):
+            for method in ('GET', 'HEAD'):
+                self.assertEqual(self.request(path, method)[0], 404, path)
+        self.assertEqual(self.request('/')[0], 200)
+
+if __name__ == '__main__':
+    unittest.main()

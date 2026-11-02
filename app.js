@@ -1,21 +1,23 @@
 const views=document.querySelectorAll('.view');const nav=[...document.querySelectorAll('nav button')];
 let currentCase=null;
+let caseDirty=false;
+let caseSaving=false;
 
 function show(id){views.forEach(v=>v.classList.remove('active'));nav.forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');nav.find(b=>b.dataset.view===id)?.classList.add('active')}
-nav.forEach(b=>b.onclick=()=>show(b.dataset.view));
+nav.forEach(b=>b.onclick=()=>{show(b.dataset.view);if(b.dataset.view==='cases')loadCases()});
 document.querySelectorAll('.tabs button').forEach((b,index)=>{if(index===0)b.classList.add('active');b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active')}});
 
 const fields=[
- {key:'caseId',label:'Case ID',readonly:true,required:true},
- {key:'source',label:'Source',readonly:true},
- {key:'customer',label:'Customer',required:true},
- {key:'aircraftId',label:'Aircraft ID',required:true},
- {key:'aircraftLocation',label:'Aircraft Location',required:true},
- {key:'priority',label:'Priority',type:'priority',required:true},
- {key:'eventTime',label:'Event Time',required:true},
- {key:'requestedDepartureDate',label:'Requested Departure Date',required:true},
- {key:'engine1',label:'Engine 1 Number',required:true},
- {key:'engine2',label:'Engine 2 Number',required:true},
+ {key:'caseId',label:'Case ID',readonly:true},
+ {key:'source',label:'Source',type:'source',required:true},
+ {key:'customer',label:'Customer',expected:true},
+ {key:'aircraftId',label:'Aircraft ID',expected:true},
+ {key:'aircraftLocation',label:'Aircraft Location',expected:true},
+ {key:'priority',label:'Priority',type:'priority',expected:true},
+ {key:'eventTime',label:'Event Time',expected:true},
+ {key:'requestedDepartureDate',label:'Requested Departure Date',expected:true},
+ {key:'engine1',label:'Engine 1 Number',expected:true},
+ {key:'engine2',label:'Engine 2 Number',expected:true},
  {key:'problemNotes',label:'Problem / Notes',type:'textarea',required:true},
  {key:'assistantSuggestions',label:'Assistant Suggestions',type:'textarea'}
 ];
@@ -73,10 +75,15 @@ async function transcribeRecording(stream){
 }
 
 document.getElementById('extract').onclick=()=>{
+ if(caseSaving||!canReplaceCase())return;
  const sourceText=document.getElementById('sourceText').value.trim();
+ if(!sourceText){document.getElementById('saveStatus').textContent='Enter a message first.';return;}
  const activeTab=document.querySelector('.tabs button.active')?.textContent||'E-Mail / Text';
  const data=extractCase(sourceText,activeTab);
  currentCase=data;
+ currentCase.originalText=sourceText;
+ caseDirty=true;
+ document.getElementById('saveStatus').textContent='Not saved. Case ID will be assigned when saving.';
  renderCase(data);
  renderAlerts(data,sourceText);
  document.getElementById('originalText').value=sourceText||'No source text provided.';
@@ -91,7 +98,7 @@ function extractCase(text,activeTab){
  const customer=m(/\bCustomer:\s*([^\n\r]+)/i)||m(/\b(Lufthansa|British Airways|Emirates|Qatar Airways|LHA|BA)\b/i);
  const aircraftLocation=extractAircraftLocation(text);
  return {
-  caseId:'IFSD-2026-0903-017',
+  caseId:'',
   source:/phone|telefon/i.test(activeTab)?'Phone Transcript':'Email',
   customer:normalizeCustomer(customer),
   aircraftId:m(/\b(?:Aircraft ID|Aircraft|Registration|Tail(?: number)?):\s*([A-Z0-9-]{4,12})\b/i)||m(/\b([A-Z]-[A-Z0-9]{4}|N[0-9A-Z]{4,6}|G-[A-Z0-9]{4})\b/i),
@@ -158,6 +165,7 @@ function renderCase(data){
  document.getElementById('fields').innerHTML=fields.map(field=>fieldMarkup(field,data[field.key])).join('');
  document.querySelectorAll('[data-case-field]').forEach(input=>{
   input.oninput=()=>{
+   caseDirty=true;
    currentCase[input.dataset.caseField]=input.value;
    if(input.dataset.caseField==='requestedDepartureDate'){
     currentCase.priority=calculatePriority(input.value);
@@ -171,21 +179,23 @@ function renderCase(data){
 
 function fieldMarkup(field,value){
  const safeValue=escapeHtml(value||'');
+ if(field.type==='source')return `<div class="field"><small>Source *</small><select data-case-field="source">${['Email','Phone Transcript'].map(source=>`<option${source===value?' selected':''}>${source}</option>`).join('')}</select></div>`;
  if(field.type==='priority'){
-  const options=priorityLevels.map(level=>`<option value="${escapeHtml(level)}"${level===(value||'')?' selected':''}>${escapeHtml(level||'Select priority')}</option>`).join('');
+  const options=['Pending',...priorityLevels.filter(Boolean)].map(level=>`<option value="${escapeHtml(level)}"${level===(value||'Pending')?' selected':''}>${escapeHtml(level)}</option>`).join('');
   return `<div class="field"><small>${field.label}${field.required?' *':''}</small><select data-case-field="${field.key}">${options}</select></div>`;
  }
  if(field.type==='textarea')return `<div class="field field-wide"><small>${field.label}${field.required?' *':''}</small><textarea data-case-field="${field.key}">${safeValue}</textarea></div>`;
- return `<div class="field"><small>${field.label}${field.required?' *':''}</small><input data-case-field="${field.key}" value="${safeValue}" ${field.readonly?'readonly':''}></div>`;
+ return `<div class="field"><small>${field.label}${field.required?' *':''}</small><input data-case-field="${field.key}" value="${safeValue}" ${field.key==='caseId'?'placeholder="Assigned on first save"':''} ${field.readonly?'readonly':''}></div>`;
 }
 
 function renderAlerts(data){
  const alerts=[];
- fields.filter(field=>field.required).forEach(field=>{
+ fields.filter(field=>field.required||field.expected).forEach(field=>{
   if(!data[field.key]||data[field.key]==='Pending')alerts.push(`${field.label} missing`);
  });
  if(!data.requestedDepartureDate)alerts.push('Requested departure date missing - priority cannot be calculated');
  alerts.push('Human review required before case submission');
+ alerts.push('Saving requires Source and Problem / Notes. Other missing details can be added later.');
  document.getElementById('missing').innerHTML=alerts.map(alert=>`<div class="miss">⚠ ${escapeHtml(alert)}</div>`).join('');
 }
 
@@ -193,12 +203,12 @@ function syncDashboard(data,sourceText){
  const text=(id,value)=>document.getElementById(id).textContent=value||'Open';
  const affectedEngine=/engine\s*1/i.test(data.problemNotes)?data.engine1||'Engine 1':/engine\s*2/i.test(data.problemNotes)?data.engine2||'Engine 2':'Engine open';
  const problem=(data.problemNotes||'Case created').replace(/\b\w/g,c=>c.toUpperCase());
- text('dashboardCase',data.caseId.replace('IFSD-2026-',''));
+ text('dashboardCase',data.caseId||'Unsaved');
  text('dashboardTrip',data.aircraftLocation||'Location open');
  text('dashboardType',affectedEngine);
  text('dashboardCustomer',data.customer);
  text('dashboardProblem',problem.length>28?`${problem.slice(0,25)}...`:problem);
- text('dashboardLevel',(data.priority||'').charAt(0)||'3');
+ text('dashboardLevel',/^[1-5]/.test(data.priority)?data.priority.charAt(0):'?');
  text('dashboardSyncStatus',`Synced from intake · ${data.aircraftId||'Aircraft ID open'}`);
  text('dashboardNotes',sourceText.length>150?`${sourceText.slice(0,147)}…`:sourceText);
  document.getElementById('dashboardLevel').classList.toggle('review',!String(data.priority).startsWith('1'));
@@ -217,3 +227,121 @@ function updateDashboardClock(){
 }
 updateDashboardClock();
 setInterval(updateDashboardClock,30000);
+
+function canReplaceCase(){
+ return !caseDirty||window.confirm('Discard unsaved changes to the current case?');
+}
+window.addEventListener('beforeunload',event=>{
+ if(caseDirty){event.preventDefault();event.returnValue='';}
+});
+
+async function caseRequest(path='',method='GET',payload){
+ if(location.protocol==='file:')throw new Error('Start python server.py and open http://127.0.0.1:8000 to use saved cases.');
+ const response=await fetch(`/api/cases${path}`,{
+  method,cache:'no-store',signal:AbortSignal.timeout(15000),
+  ...(payload?{headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}:{})
+ });
+ let data;
+ try{data=await response.json()}catch{throw new Error('Restart the Python server to enable the case database.')}
+ if(!response.ok)throw new Error(data.error||'Case request failed.');
+ return data;
+}
+
+function openCase(data){
+ currentCase=data;caseDirty=false;
+ renderCase(data);renderAlerts(data);
+ document.getElementById('originalText').value=data.originalText||'';
+ document.getElementById('sourceText').value=data.originalText||'';
+ document.getElementById('intake').classList.add('case-created');
+ document.getElementById('toResponse').disabled=false;
+ document.getElementById('saveStatus').textContent=data.caseId?`Loaded ${data.caseId}. Changes require Save Case.`:'New case. ID will be assigned when saving.';
+ syncDashboard(data,data.originalText||'');
+ show('intake');
+}
+
+document.getElementById('newCase').onclick=()=>{
+ if(caseSaving||!canReplaceCase())return;
+ const blank=Object.fromEntries(fields.map(field=>[field.key,'']));
+ openCase({...blank,source:'Email',priority:'Pending',originalText:''});
+ caseDirty=true;
+};
+
+document.getElementById('toResponse').onclick=async()=>{
+ if(!currentCase||caseSaving)return;
+ const status=document.getElementById('saveStatus');
+ if(!currentCase.problemNotes?.trim()){status.textContent='Problem / Notes is required before saving.';return;}
+ caseSaving=true;
+ document.getElementById('toResponse').disabled=true;
+ document.getElementById('extract').disabled=true;
+ document.querySelectorAll('[data-case-field]').forEach(input=>input.disabled=true);
+ status.textContent='Saving…';
+ try{
+  const id=currentCase.caseId;
+  currentCase=await caseRequest(id?`/${encodeURIComponent(id)}`:'',id?'PUT':'POST',currentCase);
+  caseDirty=false;
+  renderCase(currentCase);renderAlerts(currentCase);
+  syncDashboard(currentCase,currentCase.originalText||'');
+  status.textContent=`Saved ${currentCase.caseId}`;
+ }catch(error){status.textContent=`Save not confirmed: ${error.message} If the connection failed, check Saved Cases before retrying to avoid a duplicate.`}
+ finally{
+  caseSaving=false;
+  document.getElementById('toResponse').disabled=false;
+  document.getElementById('extract').disabled=false;
+  document.querySelectorAll('[data-case-field]').forEach(input=>input.disabled=false);
+ }
+};
+
+let listRequest=0;
+async function loadCases(){
+ const request=++listRequest;
+ const status=document.getElementById('caseListStatus');
+ const container=document.getElementById('caseList');
+ status.textContent='Loading…';
+ try{
+  const query=new URLSearchParams({q:document.getElementById('caseSearch').value,deleted:document.getElementById('caseFilter').value});
+  const records=await caseRequest(`?${query}`);
+  if(request!==listRequest)return;
+  status.textContent=records.length?`${records.length} case(s)`:'No cases found.';
+  container.replaceChildren();
+  for(const record of records){
+   const card=document.createElement('article');
+   const title=document.createElement('h3');title.textContent=record.caseId;
+   const detail=document.createElement('p');detail.textContent=[record.customer||'Customer unknown',record.aircraftId||'Aircraft unknown',record.aircraftLocation||'Location unknown',record.priority||'Pending'].join(' · ');
+   const notes=document.createElement('p');notes.textContent=record.problemNotes;
+   const actions=document.createElement('div');actions.className='case-actions';
+   const open=document.createElement('button');open.textContent=record.deletedAt?'Restore':'Open';
+   open.onclick=async()=>{
+    if(caseSaving)return;
+    if(!record.deletedAt&&!canReplaceCase())return;
+    open.disabled=true;
+    try{
+     if(record.deletedAt){await caseRequest(`/${encodeURIComponent(record.caseId)}/restore`,'POST',{revision:record.revision});await loadCases()}
+     else{openCase(await caseRequest(`/${encodeURIComponent(record.caseId)}`))}
+    }catch(error){status.textContent=error.message}
+    finally{open.disabled=false}
+   };
+   actions.append(open);
+   if(!record.deletedAt){
+    const remove=document.createElement('button');remove.textContent='Move to trash';
+    remove.onclick=async()=>{
+     if(caseSaving)return;
+     if(!window.confirm(`Move ${record.caseId} to trash? You can restore it later.`))return;
+     if(currentCase?.caseId===record.caseId&&!canReplaceCase())return;
+     remove.disabled=true;
+     try{
+      await caseRequest(`/${encodeURIComponent(record.caseId)}`,'DELETE',{revision:record.revision});
+      if(currentCase?.caseId===record.caseId){currentCase=null;caseDirty=false;document.getElementById('fields').replaceChildren();document.getElementById('toResponse').disabled=true;document.getElementById('saveStatus').textContent='Case moved to trash.';}
+      await loadCases();
+     }catch(error){status.textContent=error.message}
+     finally{remove.disabled=false}
+    };
+    actions.append(remove);
+   }
+   card.append(title,detail,notes,actions);container.append(card);
+  }
+ }catch(error){if(request===listRequest){container.replaceChildren();status.textContent=error.message}}
+}
+document.getElementById('refreshCases').onclick=loadCases;
+document.getElementById('caseFilter').onchange=loadCases;
+let searchTimer;
+document.getElementById('caseSearch').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(loadCases,250)};
