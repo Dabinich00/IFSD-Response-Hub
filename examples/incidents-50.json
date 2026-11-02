@@ -1,0 +1,902 @@
+[
+  {
+    "demoKey": "IFSD-DEMO-50-v1:001",
+    "similarityFamily": "vibration",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-001",
+      "aircraftLocation": "Shannon (SNN)",
+      "priority": "1 - Most urgent",
+      "eventTime": "2026-01-10 08:20 UTC",
+      "requestedDepartureDate": "2026-01-11 08:20 UTC",
+      "engine1": "DEMO-ENG-00001",
+      "engine2": "DEMO-ENG-00002",
+      "problemNotes": "[SYNTHETIC DEMO] Fan vibration increased during climb; engine 2 was shut down by the crew and the aircraft diverted. Crew statement is preliminary; detailed EHM data has not been provided.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:001] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-001\nAircraft location: Shannon (SNN)\nEngine 1 Number: DEMO-ENG-00001\nEngine 2 Number: DEMO-ENG-00002\nEvent time: 2026-01-10 08:20 UTC\nRequested departure: 2026-01-11 08:20 UTC\n\nFan vibration increased during climb; engine 2 was shut down by the crew and the aircraft diverted. Crew statement is preliminary; detailed EHM data has not been provided."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:002",
+    "similarityFamily": "vibration",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-002",
+      "aircraftLocation": "Berlin (BER)",
+      "priority": "2 - Urgent",
+      "eventTime": "2026-01-15 09:20 UTC",
+      "requestedDepartureDate": "2026-01-18 09:20 UTC",
+      "engine1": "DEMO-ENG-00003",
+      "engine2": "DEMO-ENG-00004",
+      "problemNotes": "[SYNTHETIC DEMO] Intermittent engine 2 vibration appeared at cruise power; no shutdown occurred and the flight continued to destination. The operator supplied an initial log extract; engineering findings are still pending.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:002] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-002\nAircraft location: Berlin (BER)\nEngine 1 Number: DEMO-ENG-00003\nEngine 2 Number: DEMO-ENG-00004\nEvent time: 2026-01-15 09:20 UTC\nRequested departure: 2026-01-18 09:20 UTC\n\nIntermittent engine 2 vibration appeared at cruise power; no shutdown occurred and the flight continued to destination. The operator supplied an initial log extract; engineering findings are still pending."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:003",
+    "similarityFamily": "vibration",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-003",
+      "aircraftLocation": "Lisbon (LIS)",
+      "priority": "3 - Medium",
+      "eventTime": "2026-01-20 10:20 UTC",
+      "requestedDepartureDate": "2026-01-27 10:20 UTC",
+      "engine1": "DEMO-ENG-00005",
+      "engine2": "DEMO-ENG-00006",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 1 vibration increased during descent, with no reported oil-pressure change; the aircraft landed at the planned airport. The report uses approximate observations; no diagnosis has been verified.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:003] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-003\nAircraft location: Lisbon (LIS)\nEngine 1 Number: DEMO-ENG-00005\nEngine 2 Number: DEMO-ENG-00006\nEvent time: 2026-01-20 10:20 UTC\nRequested departure: 2026-01-27 10:20 UTC\n\nEngine 1 vibration increased during descent, with no reported oil-pressure change; the aircraft landed at the planned airport. The report uses approximate observations; no diagnosis has been verified."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:004",
+    "similarityFamily": "vibration",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-001",
+      "aircraftLocation": "Copenhagen (CPH)",
+      "priority": "4 - Low",
+      "eventTime": "2026-01-25 11:20 UTC",
+      "requestedDepartureDate": "2026-02-09 11:20 UTC",
+      "engine1": "DEMO-ENG-00001",
+      "engine2": "DEMO-ENG-00002",
+      "problemNotes": "[SYNTHETIC DEMO] A second vibration report on engine 2 followed a previous occurrence on the same aircraft; the crew reported a precautionary shutdown. A prior related report is mentioned; this is a separate event, not a duplicate message.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:004] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-001\nAircraft location: Copenhagen (CPH)\nEngine 1 Number: DEMO-ENG-00001\nEngine 2 Number: DEMO-ENG-00002\nEvent time: 2026-01-25 11:20 UTC\nRequested departure: 2026-02-09 11:20 UTC\n\nA second vibration report on engine 2 followed a previous occurrence on the same aircraft; the crew reported a precautionary shutdown. A prior related report is mentioned; this is a separate event, not a duplicate message."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:005",
+    "similarityFamily": "vibration",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-002",
+      "aircraftLocation": "Frankfurt (FRA)",
+      "priority": "5 - Lowest",
+      "eventTime": "2026-01-30 12:20 UTC",
+      "requestedDepartureDate": "2026-03-06 12:20 UTC",
+      "engine1": "DEMO-ENG-00003",
+      "engine2": "DEMO-ENG-00004",
+      "problemNotes": "[SYNTHETIC DEMO] Vibration was reported during a ground run after maintenance; no in-flight event occurred. Ground observations are available; no validated root cause is recorded.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:005] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-002\nAircraft location: Frankfurt (FRA)\nEngine 1 Number: DEMO-ENG-00003\nEngine 2 Number: DEMO-ENG-00004\nEvent time: 2026-01-30 12:20 UTC\nRequested departure: 2026-03-06 12:20 UTC\n\nVibration was reported during a ground run after maintenance; no in-flight event occurred. Ground observations are available; no validated root cause is recorded."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:006",
+    "similarityFamily": "oil-pressure",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-003",
+      "aircraftLocation": "London Heathrow (LHR)",
+      "priority": "1 - Most urgent",
+      "eventTime": "2026-02-04 13:20 UTC",
+      "requestedDepartureDate": "2026-02-05 13:20 UTC",
+      "engine1": "DEMO-ENG-00005",
+      "engine2": "DEMO-ENG-00006",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 1 oil-pressure indication fell during cruise; the crew shut the engine down and diverted. Crew statement is preliminary; detailed EHM data has not been provided.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:006] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-003\nAircraft location: London Heathrow (LHR)\nEngine 1 Number: DEMO-ENG-00005\nEngine 2 Number: DEMO-ENG-00006\nEvent time: 2026-02-04 13:20 UTC\nRequested departure: 2026-02-05 13:20 UTC\n\nEngine 1 oil-pressure indication fell during cruise; the crew shut the engine down and diverted. Crew statement is preliminary; detailed EHM data has not been provided."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:007",
+    "similarityFamily": "oil-pressure",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-004",
+      "aircraftLocation": "Munich (MUC)",
+      "priority": "Pending",
+      "eventTime": "2026-02-09 07:20 UTC",
+      "requestedDepartureDate": "",
+      "engine1": "DEMO-ENG-00007",
+      "engine2": "DEMO-ENG-00008",
+      "problemNotes": "[SYNTHETIC DEMO] A brief engine 2 oil-pressure warning cleared; actual pressure loss versus indication fault remains unconfirmed. The operator supplied an initial log extract; engineering findings are still pending.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: requestedDepartureDate.",
+      "originalText": "[IFSD-DEMO-50-v1:007] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-004\nAircraft location: Munich (MUC)\nEngine 1 Number: DEMO-ENG-00007\nEngine 2 Number: DEMO-ENG-00008\nEvent time: 2026-02-09 07:20 UTC\n\nA brief engine 2 oil-pressure warning cleared; actual pressure loss versus indication fault remains unconfirmed. The operator supplied an initial log extract; engineering findings are still pending."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:008",
+    "similarityFamily": "oil-pressure",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-005",
+      "aircraftLocation": "Paris (CDG)",
+      "priority": "3 - Medium",
+      "eventTime": "2026-02-14 08:20 UTC",
+      "requestedDepartureDate": "2026-02-21 08:20 UTC",
+      "engine1": "DEMO-ENG-00009",
+      "engine2": "DEMO-ENG-00010",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 1 low oil pressure was accompanied by rising oil temperature; a precautionary shutdown was reported. The report uses approximate observations; no diagnosis has been verified.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:008] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-005\nAircraft location: Paris (CDG)\nEngine 1 Number: DEMO-ENG-00009\nEngine 2 Number: DEMO-ENG-00010\nEvent time: 2026-02-14 08:20 UTC\nRequested departure: 2026-02-21 08:20 UTC\n\nEngine 1 low oil pressure was accompanied by rising oil temperature; a precautionary shutdown was reported. The report uses approximate observations; no diagnosis has been verified."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:009",
+    "similarityFamily": "oil-pressure",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-003",
+      "aircraftLocation": "Shannon (SNN)",
+      "priority": "4 - Low",
+      "eventTime": "2026-02-19 09:20 UTC",
+      "requestedDepartureDate": "2026-03-06 09:20 UTC",
+      "engine1": "DEMO-ENG-00005",
+      "engine2": "",
+      "problemNotes": "[SYNTHETIC DEMO] Oil-pressure fluctuations on engine 2 recurred after an earlier report; no shutdown was reported on this flight. A prior related report is mentioned; this is a separate event, not a duplicate message.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: engine2.",
+      "originalText": "[IFSD-DEMO-50-v1:009] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-003\nAircraft location: Shannon (SNN)\nEngine 1 Number: DEMO-ENG-00005\nEvent time: 2026-02-19 09:20 UTC\nRequested departure: 2026-03-06 09:20 UTC\n\nOil-pressure fluctuations on engine 2 recurred after an earlier report; no shutdown was reported on this flight. A prior related report is mentioned; this is a separate event, not a duplicate message."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:010",
+    "similarityFamily": "oil-pressure",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-004",
+      "aircraftLocation": "Berlin (BER)",
+      "priority": "5 - Lowest",
+      "eventTime": "2026-02-24 10:20 UTC",
+      "requestedDepartureDate": "2026-03-31 10:20 UTC",
+      "engine1": "DEMO-ENG-00007",
+      "engine2": "DEMO-ENG-00008",
+      "problemNotes": "[SYNTHETIC DEMO] Low oil pressure was reported after landing during taxi; the engine was stopped on the ground. Ground observations are available; no validated root cause is recorded.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:010] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-004\nAircraft location: Berlin (BER)\nEngine 1 Number: DEMO-ENG-00007\nEngine 2 Number: DEMO-ENG-00008\nEvent time: 2026-02-24 10:20 UTC\nRequested departure: 2026-03-31 10:20 UTC\n\nLow oil pressure was reported after landing during taxi; the engine was stopped on the ground. Ground observations are available; no validated root cause is recorded."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:011",
+    "similarityFamily": "high-egt",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-005",
+      "aircraftLocation": "Frankfurt (FRA)",
+      "priority": "1 - Most urgent",
+      "eventTime": "",
+      "requestedDepartureDate": "2026-03-02 11:20 UTC",
+      "engine1": "DEMO-ENG-00009",
+      "engine2": "DEMO-ENG-00010",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 2 exhaust gas temperature (EGT) rose unexpectedly during climb; the crew reported a shutdown and return to departure airport. Crew statement is preliminary; detailed EHM data has not been provided.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: eventTime.",
+      "originalText": "[IFSD-DEMO-50-v1:011] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-005\nAircraft location: Frankfurt (FRA)\nEngine 1 Number: DEMO-ENG-00009\nEngine 2 Number: DEMO-ENG-00010\nRequested departure: 2026-03-02 11:20 UTC\n\nEngine 2 exhaust gas temperature (EGT) rose unexpectedly during climb; the crew reported a shutdown and return to departure airport. Crew statement is preliminary; detailed EHM data has not been provided."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:012",
+    "similarityFamily": "high-egt",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-006",
+      "aircraftLocation": "Madrid (MAD)",
+      "priority": "2 - Urgent",
+      "eventTime": "2026-03-06 12:20 UTC",
+      "requestedDepartureDate": "2026-03-09 12:20 UTC",
+      "engine1": "DEMO-ENG-00011",
+      "engine2": "DEMO-ENG-00012",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 1 EGT was higher than on previous flights at comparable cruise settings; no limit exceedance or shutdown was confirmed. The operator supplied an initial log extract; engineering findings are still pending.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:012] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-006\nAircraft location: Madrid (MAD)\nEngine 1 Number: DEMO-ENG-00011\nEngine 2 Number: DEMO-ENG-00012\nEvent time: 2026-03-06 12:20 UTC\nRequested departure: 2026-03-09 12:20 UTC\n\nEngine 1 EGT was higher than on previous flights at comparable cruise settings; no limit exceedance or shutdown was confirmed. The operator supplied an initial log extract; engineering findings are still pending."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:013",
+    "similarityFamily": "high-egt",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Baltic Wings",
+      "aircraftId": "DEMO-AC-007",
+      "aircraftLocation": "",
+      "priority": "3 - Medium",
+      "eventTime": "2026-03-11 13:20 UTC",
+      "requestedDepartureDate": "2026-03-18 13:20 UTC",
+      "engine1": "DEMO-ENG-00013",
+      "engine2": "DEMO-ENG-00014",
+      "problemNotes": "[SYNTHETIC DEMO] High engine 2 EGT coincided with reduced thrust during cruise; the aircraft diverted, but shutdown status is not stated. The report uses approximate observations; no diagnosis has been verified.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: aircraftLocation.",
+      "originalText": "[IFSD-DEMO-50-v1:013] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Baltic Wings\nAircraft ID: DEMO-AC-007\nEngine 1 Number: DEMO-ENG-00013\nEngine 2 Number: DEMO-ENG-00014\nEvent time: 2026-03-11 13:20 UTC\nRequested departure: 2026-03-18 13:20 UTC\n\nHigh engine 2 EGT coincided with reduced thrust during cruise; the aircraft diverted, but shutdown status is not stated. The report uses approximate observations; no diagnosis has been verified."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:014",
+    "similarityFamily": "high-egt",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-005",
+      "aircraftLocation": "London Heathrow (LHR)",
+      "priority": "Pending",
+      "eventTime": "2026-03-16 07:20 UTC",
+      "requestedDepartureDate": "",
+      "engine1": "DEMO-ENG-00009",
+      "engine2": "DEMO-ENG-00010",
+      "problemNotes": "[SYNTHETIC DEMO] A transient engine 1 EGT indication spike occurred without a reported thrust change; sensor and actual temperature effects remain unresolved. A prior related report is mentioned; this is a separate event, not a duplicate message.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: requestedDepartureDate.",
+      "originalText": "[IFSD-DEMO-50-v1:014] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-005\nAircraft location: London Heathrow (LHR)\nEngine 1 Number: DEMO-ENG-00009\nEngine 2 Number: DEMO-ENG-00010\nEvent time: 2026-03-16 07:20 UTC\n\nA transient engine 1 EGT indication spike occurred without a reported thrust change; sensor and actual temperature effects remain unresolved. A prior related report is mentioned; this is a separate event, not a duplicate message."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:015",
+    "similarityFamily": "high-egt",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-006",
+      "aircraftLocation": "Munich (MUC)",
+      "priority": "5 - Lowest",
+      "eventTime": "2026-03-21 08:20 UTC",
+      "requestedDepartureDate": "2026-04-25 08:20 UTC",
+      "engine1": "DEMO-ENG-00011",
+      "engine2": "DEMO-ENG-00012",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 2 EGT remained elevated during a ground test; the test was stopped and the aircraft did not depart. Ground observations are available; no validated root cause is recorded.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:015] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-006\nAircraft location: Munich (MUC)\nEngine 1 Number: DEMO-ENG-00011\nEngine 2 Number: DEMO-ENG-00012\nEvent time: 2026-03-21 08:20 UTC\nRequested departure: 2026-04-25 08:20 UTC\n\nEngine 2 EGT remained elevated during a ground test; the test was stopped and the aircraft did not depart. Ground observations are available; no validated root cause is recorded."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:016",
+    "similarityFamily": "compressor-surge",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Baltic Wings",
+      "aircraftId": "DEMO-AC-007",
+      "aircraftLocation": "Berlin (BER)",
+      "priority": "1 - Most urgent",
+      "eventTime": "2026-03-26 09:20 UTC",
+      "requestedDepartureDate": "2026-03-27 09:20 UTC",
+      "engine1": "DEMO-ENG-00013",
+      "engine2": "DEMO-ENG-00014",
+      "problemNotes": "[SYNTHETIC DEMO] A loud bang, fluctuating thrust and an EGT rise were reported on engine 1 during climb; the crew described a suspected compressor surge and shut down the engine. Crew statement is preliminary; detailed EHM data has not been provided.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:016] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Baltic Wings\nAircraft ID: DEMO-AC-007\nAircraft location: Berlin (BER)\nEngine 1 Number: DEMO-ENG-00013\nEngine 2 Number: DEMO-ENG-00014\nEvent time: 2026-03-26 09:20 UTC\nRequested departure: 2026-03-27 09:20 UTC\n\nA loud bang, fluctuating thrust and an EGT rise were reported on engine 1 during climb; the crew described a suspected compressor surge and shut down the engine. Crew statement is preliminary; detailed EHM data has not been provided."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:017",
+    "similarityFamily": "compressor-surge",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Baltic Wings",
+      "aircraftId": "DEMO-AC-008",
+      "aircraftLocation": "Lisbon (LIS)",
+      "priority": "2 - Urgent",
+      "eventTime": "2026-03-31 10:20 UTC",
+      "requestedDepartureDate": "2026-04-03 10:20 UTC",
+      "engine1": "",
+      "engine2": "DEMO-ENG-00016",
+      "problemNotes": "[SYNTHETIC DEMO] Two brief bangs from engine 2 occurred at cruise; a suspected surge was reported, with no confirmed shutdown. The operator supplied an initial log extract; engineering findings are still pending.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: engine1.",
+      "originalText": "[IFSD-DEMO-50-v1:017] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Baltic Wings\nAircraft ID: DEMO-AC-008\nAircraft location: Lisbon (LIS)\nEngine 2 Number: DEMO-ENG-00016\nEvent time: 2026-03-31 10:20 UTC\nRequested departure: 2026-04-03 10:20 UTC\n\nTwo brief bangs from engine 2 occurred at cruise; a suspected surge was reported, with no confirmed shutdown. The operator supplied an initial log extract; engineering findings are still pending."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:018",
+    "similarityFamily": "compressor-surge",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Baltic Wings",
+      "aircraftId": "DEMO-AC-009",
+      "aircraftLocation": "Copenhagen (CPH)",
+      "priority": "3 - Medium",
+      "eventTime": "2026-04-05 11:20 UTC",
+      "requestedDepartureDate": "2026-04-12 11:20 UTC",
+      "engine1": "DEMO-ENG-00017",
+      "engine2": "",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 1 thrust oscillation occurred during descent without an audible bang; compressor instability is suspected but not established. The report uses approximate observations; no diagnosis has been verified.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: engine2.",
+      "originalText": "[IFSD-DEMO-50-v1:018] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Baltic Wings\nAircraft ID: DEMO-AC-009\nAircraft location: Copenhagen (CPH)\nEngine 1 Number: DEMO-ENG-00017\nEvent time: 2026-04-05 11:20 UTC\nRequested departure: 2026-04-12 11:20 UTC\n\nEngine 1 thrust oscillation occurred during descent without an audible bang; compressor instability is suspected but not established. The report uses approximate observations; no diagnosis has been verified."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:019",
+    "similarityFamily": "compressor-surge",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Baltic Wings",
+      "aircraftId": "DEMO-AC-007",
+      "aircraftLocation": "Frankfurt (FRA)",
+      "priority": "4 - Low",
+      "eventTime": "2026-04-10 12:20 UTC",
+      "requestedDepartureDate": "2026-04-25 12:20 UTC",
+      "engine1": "DEMO-ENG-00013",
+      "engine2": "DEMO-ENG-00014",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 2 experienced a reported surge followed by high vibration; the aircraft diverted after a crew-commanded shutdown. A prior related report is mentioned; this is a separate event, not a duplicate message.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:019] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Baltic Wings\nAircraft ID: DEMO-AC-007\nAircraft location: Frankfurt (FRA)\nEngine 1 Number: DEMO-ENG-00013\nEngine 2 Number: DEMO-ENG-00014\nEvent time: 2026-04-10 12:20 UTC\nRequested departure: 2026-04-25 12:20 UTC\n\nEngine 2 experienced a reported surge followed by high vibration; the aircraft diverted after a crew-commanded shutdown. A prior related report is mentioned; this is a separate event, not a duplicate message."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:020",
+    "similarityFamily": "compressor-surge",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Baltic Wings",
+      "aircraftId": "DEMO-AC-008",
+      "aircraftLocation": "Madrid (MAD)",
+      "priority": "5 - Lowest",
+      "eventTime": "2026-04-15 13:20 UTC",
+      "requestedDepartureDate": "2026-05-20 13:20 UTC",
+      "engine1": "DEMO-ENG-00015",
+      "engine2": "DEMO-ENG-00016",
+      "problemNotes": "[SYNTHETIC DEMO] A suspected compressor surge occurred on engine 1 during a ground run after maintenance; no flight was involved. Ground observations are available; no validated root cause is recorded.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:020] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Baltic Wings\nAircraft ID: DEMO-AC-008\nAircraft location: Madrid (MAD)\nEngine 1 Number: DEMO-ENG-00015\nEngine 2 Number: DEMO-ENG-00016\nEvent time: 2026-04-15 13:20 UTC\nRequested departure: 2026-05-20 13:20 UTC\n\nA suspected compressor surge occurred on engine 1 during a ground run after maintenance; no flight was involved. Ground observations are available; no validated root cause is recorded."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:021",
+    "similarityFamily": "bird-strike",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Baltic Wings",
+      "aircraftId": "DEMO-AC-009",
+      "aircraftLocation": "Munich (MUC)",
+      "priority": "Pending",
+      "eventTime": "2026-04-20 07:20 UTC",
+      "requestedDepartureDate": "",
+      "engine1": "DEMO-ENG-00017",
+      "engine2": "DEMO-ENG-00018",
+      "problemNotes": "[SYNTHETIC DEMO] A suspected bird strike during climb was followed by engine 2 vibration; the crew shut down the engine and returned. Crew statement is preliminary; detailed EHM data has not been provided.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: requestedDepartureDate.",
+      "originalText": "[IFSD-DEMO-50-v1:021] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Baltic Wings\nAircraft ID: DEMO-AC-009\nAircraft location: Munich (MUC)\nEngine 1 Number: DEMO-ENG-00017\nEngine 2 Number: DEMO-ENG-00018\nEvent time: 2026-04-20 07:20 UTC\n\nA suspected bird strike during climb was followed by engine 2 vibration; the crew shut down the engine and returned. Crew statement is preliminary; detailed EHM data has not been provided."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:022",
+    "similarityFamily": "bird-strike",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Alpine Airways",
+      "aircraftId": "DEMO-AC-010",
+      "aircraftLocation": "Paris (CDG)",
+      "priority": "2 - Urgent",
+      "eventTime": "",
+      "requestedDepartureDate": "2026-04-28 08:20 UTC",
+      "engine1": "DEMO-ENG-00019",
+      "engine2": "DEMO-ENG-00020",
+      "problemNotes": "[SYNTHETIC DEMO] A bird impact was reported on approach near engine 1; the aircraft landed normally and no engine shutdown was reported. The operator supplied an initial log extract; engineering findings are still pending.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: eventTime.",
+      "originalText": "[IFSD-DEMO-50-v1:022] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Alpine Airways\nAircraft ID: DEMO-AC-010\nAircraft location: Paris (CDG)\nEngine 1 Number: DEMO-ENG-00019\nEngine 2 Number: DEMO-ENG-00020\nRequested departure: 2026-04-28 08:20 UTC\n\nA bird impact was reported on approach near engine 1; the aircraft landed normally and no engine shutdown was reported. The operator supplied an initial log extract; engineering findings are still pending."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:023",
+    "similarityFamily": "bird-strike",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Alpine Airways",
+      "aircraftId": "DEMO-AC-011",
+      "aircraftLocation": "Shannon (SNN)",
+      "priority": "3 - Medium",
+      "eventTime": "2026-04-30 09:20 UTC",
+      "requestedDepartureDate": "2026-05-07 09:20 UTC",
+      "engine1": "DEMO-ENG-00021",
+      "engine2": "DEMO-ENG-00022",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 2 vibration and an EGT rise followed a possible bird encounter; the crew could not confirm ingestion. The report uses approximate observations; no diagnosis has been verified.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:023] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Alpine Airways\nAircraft ID: DEMO-AC-011\nAircraft location: Shannon (SNN)\nEngine 1 Number: DEMO-ENG-00021\nEngine 2 Number: DEMO-ENG-00022\nEvent time: 2026-04-30 09:20 UTC\nRequested departure: 2026-05-07 09:20 UTC\n\nEngine 2 vibration and an EGT rise followed a possible bird encounter; the crew could not confirm ingestion. The report uses approximate observations; no diagnosis has been verified."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:024",
+    "similarityFamily": "bird-strike",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Baltic Wings",
+      "aircraftId": "DEMO-AC-009",
+      "aircraftLocation": "Berlin (BER)",
+      "priority": "4 - Low",
+      "eventTime": "2026-05-05 10:20 UTC",
+      "requestedDepartureDate": "2026-05-20 10:20 UTC",
+      "engine1": "DEMO-ENG-00017",
+      "engine2": "DEMO-ENG-00018",
+      "problemNotes": "[SYNTHETIC DEMO] Bird remains were reported near the engine 1 inlet after landing; no abnormal engine indications had been reported in flight. A prior related report is mentioned; this is a separate event, not a duplicate message.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:024] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Baltic Wings\nAircraft ID: DEMO-AC-009\nAircraft location: Berlin (BER)\nEngine 1 Number: DEMO-ENG-00017\nEngine 2 Number: DEMO-ENG-00018\nEvent time: 2026-05-05 10:20 UTC\nRequested departure: 2026-05-20 10:20 UTC\n\nBird remains were reported near the engine 1 inlet after landing; no abnormal engine indications had been reported in flight. A prior related report is mentioned; this is a separate event, not a duplicate message."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:025",
+    "similarityFamily": "bird-strike",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Alpine Airways",
+      "aircraftId": "DEMO-AC-010",
+      "aircraftLocation": "Lisbon (LIS)",
+      "priority": "5 - Lowest",
+      "eventTime": "2026-05-10 11:20 UTC",
+      "requestedDepartureDate": "2026-06-14 11:20 UTC",
+      "engine1": "DEMO-ENG-00019",
+      "engine2": "DEMO-ENG-00020",
+      "problemNotes": "[SYNTHETIC DEMO] A suspected bird strike at takeoff was followed by engine 2 thrust loss; shutdown status is missing from the initial call. Ground observations are available; no validated root cause is recorded.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:025] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Alpine Airways\nAircraft ID: DEMO-AC-010\nAircraft location: Lisbon (LIS)\nEngine 1 Number: DEMO-ENG-00019\nEngine 2 Number: DEMO-ENG-00020\nEvent time: 2026-05-10 11:20 UTC\nRequested departure: 2026-06-14 11:20 UTC\n\nA suspected bird strike at takeoff was followed by engine 2 thrust loss; shutdown status is missing from the initial call. Ground observations are available; no validated root cause is recorded."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:026",
+    "similarityFamily": "fuel-system",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Alpine Airways",
+      "aircraftId": "DEMO-AC-011",
+      "aircraftLocation": "",
+      "priority": "1 - Most urgent",
+      "eventTime": "2026-05-15 12:20 UTC",
+      "requestedDepartureDate": "2026-05-16 12:20 UTC",
+      "engine1": "DEMO-ENG-00021",
+      "engine2": "DEMO-ENG-00022",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 1 fuel-flow indication fell with a loss of thrust during cruise; a flameout was reported and the aircraft diverted. Crew statement is preliminary; detailed EHM data has not been provided.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: aircraftLocation.",
+      "originalText": "[IFSD-DEMO-50-v1:026] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Alpine Airways\nAircraft ID: DEMO-AC-011\nEngine 1 Number: DEMO-ENG-00021\nEngine 2 Number: DEMO-ENG-00022\nEvent time: 2026-05-15 12:20 UTC\nRequested departure: 2026-05-16 12:20 UTC\n\nEngine 1 fuel-flow indication fell with a loss of thrust during cruise; a flameout was reported and the aircraft diverted. Crew statement is preliminary; detailed EHM data has not been provided."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:027",
+    "similarityFamily": "fuel-system",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Alpine Airways",
+      "aircraftId": "DEMO-AC-012",
+      "aircraftLocation": "Amsterdam (AMS)",
+      "priority": "2 - Urgent",
+      "eventTime": "2026-05-20 13:20 UTC",
+      "requestedDepartureDate": "2026-05-23 13:20 UTC",
+      "engine1": "DEMO-ENG-00023",
+      "engine2": "",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 2 fuel-flow indication fluctuated while reported thrust remained stable; the cause is unconfirmed. The operator supplied an initial log extract; engineering findings are still pending.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: engine2.",
+      "originalText": "[IFSD-DEMO-50-v1:027] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Alpine Airways\nAircraft ID: DEMO-AC-012\nAircraft location: Amsterdam (AMS)\nEngine 1 Number: DEMO-ENG-00023\nEvent time: 2026-05-20 13:20 UTC\nRequested departure: 2026-05-23 13:20 UTC\n\nEngine 2 fuel-flow indication fluctuated while reported thrust remained stable; the cause is unconfirmed. The operator supplied an initial log extract; engineering findings are still pending."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:028",
+    "similarityFamily": "fuel-system",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Meridian Air",
+      "aircraftId": "DEMO-AC-013",
+      "aircraftLocation": "London Heathrow (LHR)",
+      "priority": "Pending",
+      "eventTime": "2026-05-25 07:20 UTC",
+      "requestedDepartureDate": "",
+      "engine1": "DEMO-ENG-00025",
+      "engine2": "DEMO-ENG-00026",
+      "problemNotes": "[SYNTHETIC DEMO] A fuel-system warning preceded engine 1 rollback during climb; the crew reported a precautionary shutdown. The report uses approximate observations; no diagnosis has been verified.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: requestedDepartureDate.",
+      "originalText": "[IFSD-DEMO-50-v1:028] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Meridian Air\nAircraft ID: DEMO-AC-013\nAircraft location: London Heathrow (LHR)\nEngine 1 Number: DEMO-ENG-00025\nEngine 2 Number: DEMO-ENG-00026\nEvent time: 2026-05-25 07:20 UTC\n\nA fuel-system warning preceded engine 1 rollback during climb; the crew reported a precautionary shutdown. The report uses approximate observations; no diagnosis has been verified."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:029",
+    "similarityFamily": "fuel-system",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Alpine Airways",
+      "aircraftId": "DEMO-AC-011",
+      "aircraftLocation": "Munich (MUC)",
+      "priority": "4 - Low",
+      "eventTime": "2026-05-30 08:20 UTC",
+      "requestedDepartureDate": "2026-06-14 08:20 UTC",
+      "engine1": "DEMO-ENG-00021",
+      "engine2": "DEMO-ENG-00022",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 2 fuel-flow changes and high EGT were reported together; no confirmed shutdown was included in the email. A prior related report is mentioned; this is a separate event, not a duplicate message.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:029] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Alpine Airways\nAircraft ID: DEMO-AC-011\nAircraft location: Munich (MUC)\nEngine 1 Number: DEMO-ENG-00021\nEngine 2 Number: DEMO-ENG-00022\nEvent time: 2026-05-30 08:20 UTC\nRequested departure: 2026-06-14 08:20 UTC\n\nEngine 2 fuel-flow changes and high EGT were reported together; no confirmed shutdown was included in the email. A prior related report is mentioned; this is a separate event, not a duplicate message."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:030",
+    "similarityFamily": "fuel-system",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Alpine Airways",
+      "aircraftId": "DEMO-AC-012",
+      "aircraftLocation": "Paris (CDG)",
+      "priority": "5 - Lowest",
+      "eventTime": "2026-06-04 09:20 UTC",
+      "requestedDepartureDate": "2026-07-09 09:20 UTC",
+      "engine1": "DEMO-ENG-00023",
+      "engine2": "DEMO-ENG-00024",
+      "problemNotes": "[SYNTHETIC DEMO] A suspected fuel leak was reported during a ground inspection; engine 1 was not started and the departure was delayed. Ground observations are available; no validated root cause is recorded.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:030] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Alpine Airways\nAircraft ID: DEMO-AC-012\nAircraft location: Paris (CDG)\nEngine 1 Number: DEMO-ENG-00023\nEngine 2 Number: DEMO-ENG-00024\nEvent time: 2026-06-04 09:20 UTC\nRequested departure: 2026-07-09 09:20 UTC\n\nA suspected fuel leak was reported during a ground inspection; engine 1 was not started and the departure was delayed. Ground observations are available; no validated root cause is recorded."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:031",
+    "similarityFamily": "indication-disagreement",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Meridian Air",
+      "aircraftId": "DEMO-AC-013",
+      "aircraftLocation": "Lisbon (LIS)",
+      "priority": "1 - Most urgent",
+      "eventTime": "2026-06-09 10:20 UTC",
+      "requestedDepartureDate": "2026-06-10 10:20 UTC",
+      "engine1": "DEMO-ENG-00025",
+      "engine2": "DEMO-ENG-00026",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 2 vibration indications disagreed between available displays; the crew reported no associated thrust loss. Crew statement is preliminary; detailed EHM data has not been provided.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:031] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Meridian Air\nAircraft ID: DEMO-AC-013\nAircraft location: Lisbon (LIS)\nEngine 1 Number: DEMO-ENG-00025\nEngine 2 Number: DEMO-ENG-00026\nEvent time: 2026-06-09 10:20 UTC\nRequested departure: 2026-06-10 10:20 UTC\n\nEngine 2 vibration indications disagreed between available displays; the crew reported no associated thrust loss. Crew statement is preliminary; detailed EHM data has not been provided."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:032",
+    "similarityFamily": "indication-disagreement",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Meridian Air",
+      "aircraftId": "DEMO-AC-014",
+      "aircraftLocation": "Copenhagen (CPH)",
+      "priority": "2 - Urgent",
+      "eventTime": "2026-06-14 11:20 UTC",
+      "requestedDepartureDate": "2026-06-17 11:20 UTC",
+      "engine1": "DEMO-ENG-00027",
+      "engine2": "DEMO-ENG-00028",
+      "problemNotes": "[SYNTHETIC DEMO] An engine 1 temperature indication intermittently disappeared during cruise; no shutdown occurred. The operator supplied an initial log extract; engineering findings are still pending.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:032] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Meridian Air\nAircraft ID: DEMO-AC-014\nAircraft location: Copenhagen (CPH)\nEngine 1 Number: DEMO-ENG-00027\nEngine 2 Number: DEMO-ENG-00028\nEvent time: 2026-06-14 11:20 UTC\nRequested departure: 2026-06-17 11:20 UTC\n\nAn engine 1 temperature indication intermittently disappeared during cruise; no shutdown occurred. The operator supplied an initial log extract; engineering findings are still pending."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:033",
+    "similarityFamily": "indication-disagreement",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Meridian Air",
+      "aircraftId": "DEMO-AC-015",
+      "aircraftLocation": "Frankfurt (FRA)",
+      "priority": "3 - Medium",
+      "eventTime": "",
+      "requestedDepartureDate": "2026-06-26 12:20 UTC",
+      "engine1": "DEMO-ENG-00029",
+      "engine2": "DEMO-ENG-00030",
+      "problemNotes": "[SYNTHETIC DEMO] An oil-pressure alert on engine 2 conflicted with the remaining reported parameters; the crew requested engineering review after landing. The report uses approximate observations; no diagnosis has been verified.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: eventTime.",
+      "originalText": "[IFSD-DEMO-50-v1:033] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Meridian Air\nAircraft ID: DEMO-AC-015\nAircraft location: Frankfurt (FRA)\nEngine 1 Number: DEMO-ENG-00029\nEngine 2 Number: DEMO-ENG-00030\nRequested departure: 2026-06-26 12:20 UTC\n\nAn oil-pressure alert on engine 2 conflicted with the remaining reported parameters; the crew requested engineering review after landing. The report uses approximate observations; no diagnosis has been verified."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:034",
+    "similarityFamily": "indication-disagreement",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Meridian Air",
+      "aircraftId": "DEMO-AC-013",
+      "aircraftLocation": "Madrid (MAD)",
+      "priority": "4 - Low",
+      "eventTime": "2026-06-24 13:20 UTC",
+      "requestedDepartureDate": "2026-07-09 13:20 UTC",
+      "engine1": "",
+      "engine2": "DEMO-ENG-00026",
+      "problemNotes": "[SYNTHETIC DEMO] An engine 1 speed indication froze while other indications continued to change; actual engine condition is not established. A prior related report is mentioned; this is a separate event, not a duplicate message.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: engine1.",
+      "originalText": "[IFSD-DEMO-50-v1:034] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Meridian Air\nAircraft ID: DEMO-AC-013\nAircraft location: Madrid (MAD)\nEngine 2 Number: DEMO-ENG-00026\nEvent time: 2026-06-24 13:20 UTC\nRequested departure: 2026-07-09 13:20 UTC\n\nAn engine 1 speed indication froze while other indications continued to change; actual engine condition is not established. A prior related report is mentioned; this is a separate event, not a duplicate message."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:035",
+    "similarityFamily": "indication-disagreement",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Meridian Air",
+      "aircraftId": "DEMO-AC-014",
+      "aircraftLocation": "Amsterdam (AMS)",
+      "priority": "Pending",
+      "eventTime": "2026-06-29 07:20 UTC",
+      "requestedDepartureDate": "",
+      "engine1": "DEMO-ENG-00027",
+      "engine2": "DEMO-ENG-00028",
+      "problemNotes": "[SYNTHETIC DEMO] An engine 2 sensor fault recurred during a ground check after a previous in-flight indication report. Ground observations are available; no validated root cause is recorded.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: requestedDepartureDate.",
+      "originalText": "[IFSD-DEMO-50-v1:035] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Meridian Air\nAircraft ID: DEMO-AC-014\nAircraft location: Amsterdam (AMS)\nEngine 1 Number: DEMO-ENG-00027\nEngine 2 Number: DEMO-ENG-00028\nEvent time: 2026-06-29 07:20 UTC\n\nAn engine 2 sensor fault recurred during a ground check after a previous in-flight indication report. Ground observations are available; no validated root cause is recorded."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:036",
+    "similarityFamily": "oil-consumption",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Meridian Air",
+      "aircraftId": "DEMO-AC-015",
+      "aircraftLocation": "Paris (CDG)",
+      "priority": "1 - Most urgent",
+      "eventTime": "2026-07-04 08:20 UTC",
+      "requestedDepartureDate": "2026-07-05 08:20 UTC",
+      "engine1": "DEMO-ENG-00029",
+      "engine2": "",
+      "problemNotes": "[SYNTHETIC DEMO] An unusually large oil top-up was recorded for engine 1 after landing; no shutdown occurred during the flight. Crew statement is preliminary; detailed EHM data has not been provided.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: engine2.",
+      "originalText": "[IFSD-DEMO-50-v1:036] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Meridian Air\nAircraft ID: DEMO-AC-015\nAircraft location: Paris (CDG)\nEngine 1 Number: DEMO-ENG-00029\nEvent time: 2026-07-04 08:20 UTC\nRequested departure: 2026-07-05 08:20 UTC\n\nAn unusually large oil top-up was recorded for engine 1 after landing; no shutdown occurred during the flight. Crew statement is preliminary; detailed EHM data has not been provided."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:037",
+    "similarityFamily": "oil-consumption",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-001",
+      "aircraftLocation": "Shannon (SNN)",
+      "priority": "2 - Urgent",
+      "eventTime": "2026-07-09 09:20 UTC",
+      "requestedDepartureDate": "2026-07-12 09:20 UTC",
+      "engine1": "DEMO-ENG-00003",
+      "engine2": "DEMO-ENG-00002",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 2 oil quantity decreased across several sectors; no visible leak was confirmed in the initial report. The operator supplied an initial log extract; engineering findings are still pending. Fictional fleet log: DEMO-ENG-00003 transferred from DEMO-AC-002 to DEMO-AC-001 on 2026-06-01.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:037] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-001\nAircraft location: Shannon (SNN)\nEngine 1 Number: DEMO-ENG-00003\nEngine 2 Number: DEMO-ENG-00002\nEvent time: 2026-07-09 09:20 UTC\nRequested departure: 2026-07-12 09:20 UTC\n\nEngine 2 oil quantity decreased across several sectors; no visible leak was confirmed in the initial report. The operator supplied an initial log extract; engineering findings are still pending. Fictional fleet log: DEMO-ENG-00003 transferred from DEMO-AC-002 to DEMO-AC-001 on 2026-06-01."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:038",
+    "similarityFamily": "oil-consumption",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-002",
+      "aircraftLocation": "Berlin (BER)",
+      "priority": "3 - Medium",
+      "eventTime": "2026-07-14 10:20 UTC",
+      "requestedDepartureDate": "2026-07-21 10:20 UTC",
+      "engine1": "DEMO-ENG-90003",
+      "engine2": "DEMO-ENG-00004",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 1 oil loss was accompanied by low pressure during cruise; the crew reported a shutdown and diversion. The report uses approximate observations; no diagnosis has been verified.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:038] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-002\nAircraft location: Berlin (BER)\nEngine 1 Number: DEMO-ENG-90003\nEngine 2 Number: DEMO-ENG-00004\nEvent time: 2026-07-14 10:20 UTC\nRequested departure: 2026-07-21 10:20 UTC\n\nEngine 1 oil loss was accompanied by low pressure during cruise; the crew reported a shutdown and diversion. The report uses approximate observations; no diagnosis has been verified."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:039",
+    "similarityFamily": "oil-consumption",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Meridian Air",
+      "aircraftId": "DEMO-AC-015",
+      "aircraftLocation": "",
+      "priority": "4 - Low",
+      "eventTime": "2026-07-19 11:20 UTC",
+      "requestedDepartureDate": "2026-08-03 11:20 UTC",
+      "engine1": "DEMO-ENG-00029",
+      "engine2": "DEMO-ENG-00030",
+      "problemNotes": "[SYNTHETIC DEMO] An oil leak was observed near engine 2 on the ground; the exact origin has not been established. A prior related report is mentioned; this is a separate event, not a duplicate message.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: aircraftLocation.",
+      "originalText": "[IFSD-DEMO-50-v1:039] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Meridian Air\nAircraft ID: DEMO-AC-015\nEngine 1 Number: DEMO-ENG-00029\nEngine 2 Number: DEMO-ENG-00030\nEvent time: 2026-07-19 11:20 UTC\nRequested departure: 2026-08-03 11:20 UTC\n\nAn oil leak was observed near engine 2 on the ground; the exact origin has not been established. A prior related report is mentioned; this is a separate event, not a duplicate message."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:040",
+    "similarityFamily": "oil-consumption",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-001",
+      "aircraftLocation": "Copenhagen (CPH)",
+      "priority": "5 - Lowest",
+      "eventTime": "2026-07-24 12:20 UTC",
+      "requestedDepartureDate": "2026-08-28 12:20 UTC",
+      "engine1": "DEMO-ENG-00003",
+      "engine2": "DEMO-ENG-00002",
+      "problemNotes": "[SYNTHETIC DEMO] A repeat oil-consumption report on engine 1 followed an earlier top-up; flight-by-flight quantities are missing. Ground observations are available; no validated root cause is recorded. Fictional fleet log: DEMO-ENG-00003 transferred from DEMO-AC-002 to DEMO-AC-001 on 2026-06-01.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:040] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-001\nAircraft location: Copenhagen (CPH)\nEngine 1 Number: DEMO-ENG-00003\nEngine 2 Number: DEMO-ENG-00002\nEvent time: 2026-07-24 12:20 UTC\nRequested departure: 2026-08-28 12:20 UTC\n\nA repeat oil-consumption report on engine 1 followed an earlier top-up; flight-by-flight quantities are missing. Ground observations are available; no validated root cause is recorded. Fictional fleet log: DEMO-ENG-00003 transferred from DEMO-AC-002 to DEMO-AC-001 on 2026-06-01."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:041",
+    "similarityFamily": "smoke-odour",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-002",
+      "aircraftLocation": "Amsterdam (AMS)",
+      "priority": "1 - Most urgent",
+      "eventTime": "2026-07-29 13:20 UTC",
+      "requestedDepartureDate": "2026-07-30 13:20 UTC",
+      "engine1": "DEMO-ENG-90003",
+      "engine2": "DEMO-ENG-00004",
+      "problemNotes": "[SYNTHETIC DEMO] Cabin odour was reported during climb with an engine 2 oil-system alert; the source of the odour is unconfirmed and the aircraft returned. Crew statement is preliminary; detailed EHM data has not been provided.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:041] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-002\nAircraft location: Amsterdam (AMS)\nEngine 1 Number: DEMO-ENG-90003\nEngine 2 Number: DEMO-ENG-00004\nEvent time: 2026-07-29 13:20 UTC\nRequested departure: 2026-07-30 13:20 UTC\n\nCabin odour was reported during climb with an engine 2 oil-system alert; the source of the odour is unconfirmed and the aircraft returned. Crew statement is preliminary; detailed EHM data has not been provided."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:042",
+    "similarityFamily": "smoke-odour",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-003",
+      "aircraftLocation": "London Heathrow (LHR)",
+      "priority": "Pending",
+      "eventTime": "2026-08-03 07:20 UTC",
+      "requestedDepartureDate": "",
+      "engine1": "DEMO-ENG-00005",
+      "engine2": "DEMO-ENG-00006",
+      "problemNotes": "[SYNTHETIC DEMO] Smoke was reported near engine 1 after landing; the engine was stopped on the ground and no in-flight shutdown occurred. The operator supplied an initial log extract; engineering findings are still pending.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: requestedDepartureDate.",
+      "originalText": "[IFSD-DEMO-50-v1:042] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-003\nAircraft location: London Heathrow (LHR)\nEngine 1 Number: DEMO-ENG-00005\nEngine 2 Number: DEMO-ENG-00006\nEvent time: 2026-08-03 07:20 UTC\n\nSmoke was reported near engine 1 after landing; the engine was stopped on the ground and no in-flight shutdown occurred. The operator supplied an initial log extract; engineering findings are still pending."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:043",
+    "similarityFamily": "smoke-odour",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-004",
+      "aircraftLocation": "Munich (MUC)",
+      "priority": "3 - Medium",
+      "eventTime": "2026-08-08 08:20 UTC",
+      "requestedDepartureDate": "2026-08-15 08:20 UTC",
+      "engine1": "DEMO-ENG-00007",
+      "engine2": "DEMO-ENG-00008",
+      "problemNotes": "[SYNTHETIC DEMO] A transient cabin smell occurred without abnormal engine indications; no engine can yet be identified as the source. The report uses approximate observations; no diagnosis has been verified.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:043] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-004\nAircraft location: Munich (MUC)\nEngine 1 Number: DEMO-ENG-00007\nEngine 2 Number: DEMO-ENG-00008\nEvent time: 2026-08-08 08:20 UTC\nRequested departure: 2026-08-15 08:20 UTC\n\nA transient cabin smell occurred without abnormal engine indications; no engine can yet be identified as the source. The report uses approximate observations; no diagnosis has been verified."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:044",
+    "similarityFamily": "smoke-odour",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-002",
+      "aircraftLocation": "Paris (CDG)",
+      "priority": "4 - Low",
+      "eventTime": "",
+      "requestedDepartureDate": "2026-08-28 09:20 UTC",
+      "engine1": "DEMO-ENG-90003",
+      "engine2": "DEMO-ENG-00004",
+      "problemNotes": "[SYNTHETIC DEMO] An engine 2 fire warning was reported during cruise and the crew shut down the engine; physical evidence of fire is not yet available. A prior related report is mentioned; this is a separate event, not a duplicate message.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: eventTime.",
+      "originalText": "[IFSD-DEMO-50-v1:044] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-002\nAircraft location: Paris (CDG)\nEngine 1 Number: DEMO-ENG-90003\nEngine 2 Number: DEMO-ENG-00004\nRequested departure: 2026-08-28 09:20 UTC\n\nAn engine 2 fire warning was reported during cruise and the crew shut down the engine; physical evidence of fire is not yet available. A prior related report is mentioned; this is a separate event, not a duplicate message."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:045",
+    "similarityFamily": "smoke-odour",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Northstar Air",
+      "aircraftId": "DEMO-AC-003",
+      "aircraftLocation": "Shannon (SNN)",
+      "priority": "5 - Lowest",
+      "eventTime": "2026-08-18 10:20 UTC",
+      "requestedDepartureDate": "2026-09-22 10:20 UTC",
+      "engine1": "DEMO-ENG-00005",
+      "engine2": "",
+      "problemNotes": "[SYNTHETIC DEMO] An odour report recurred on the same aircraft, but this report contains no engine warning or shutdown. Ground observations are available; no validated root cause is recorded.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: engine2.",
+      "originalText": "[IFSD-DEMO-50-v1:045] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Northstar Air\nAircraft ID: DEMO-AC-003\nAircraft location: Shannon (SNN)\nEngine 1 Number: DEMO-ENG-00005\nEvent time: 2026-08-18 10:20 UTC\nRequested departure: 2026-09-22 10:20 UTC\n\nAn odour report recurred on the same aircraft, but this report contains no engine warning or shutdown. Ground observations are available; no validated root cause is recorded."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:046",
+    "similarityFamily": "flameout-restart",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-004",
+      "aircraftLocation": "Copenhagen (CPH)",
+      "priority": "1 - Most urgent",
+      "eventTime": "2026-08-23 11:20 UTC",
+      "requestedDepartureDate": "2026-08-24 11:20 UTC",
+      "engine1": "DEMO-ENG-00007",
+      "engine2": "DEMO-ENG-00008",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 1 flamed out during cruise; the crew reported an unsuccessful restart attempt and diversion. Crew statement is preliminary; detailed EHM data has not been provided.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:046] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-004\nAircraft location: Copenhagen (CPH)\nEngine 1 Number: DEMO-ENG-00007\nEngine 2 Number: DEMO-ENG-00008\nEvent time: 2026-08-23 11:20 UTC\nRequested departure: 2026-08-24 11:20 UTC\n\nEngine 1 flamed out during cruise; the crew reported an unsuccessful restart attempt and diversion. Crew statement is preliminary; detailed EHM data has not been provided."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:047",
+    "similarityFamily": "flameout-restart",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-005",
+      "aircraftLocation": "Frankfurt (FRA)",
+      "priority": "2 - Urgent",
+      "eventTime": "2026-08-28 12:20 UTC",
+      "requestedDepartureDate": "2026-08-31 12:20 UTC",
+      "engine1": "DEMO-ENG-00009",
+      "engine2": "DEMO-ENG-00010",
+      "problemNotes": "[SYNTHETIC DEMO] A brief engine 2 loss of combustion was followed by a reported successful relight; the aircraft diverted for review. The operator supplied an initial log extract; engineering findings are still pending.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:047] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-005\nAircraft location: Frankfurt (FRA)\nEngine 1 Number: DEMO-ENG-00009\nEngine 2 Number: DEMO-ENG-00010\nEvent time: 2026-08-28 12:20 UTC\nRequested departure: 2026-08-31 12:20 UTC\n\nA brief engine 2 loss of combustion was followed by a reported successful relight; the aircraft diverted for review. The operator supplied an initial log extract; engineering findings are still pending."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:048",
+    "similarityFamily": "flameout-restart",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-006",
+      "aircraftLocation": "Madrid (MAD)",
+      "priority": "3 - Medium",
+      "eventTime": "2026-09-02 13:20 UTC",
+      "requestedDepartureDate": "2026-09-09 13:20 UTC",
+      "engine1": "DEMO-ENG-00011",
+      "engine2": "DEMO-ENG-00012",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 1 shutdown was reported during descent; the initial message does not distinguish a flameout from a commanded shutdown. The report uses approximate observations; no diagnosis has been verified.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:048] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-006\nAircraft location: Madrid (MAD)\nEngine 1 Number: DEMO-ENG-00011\nEngine 2 Number: DEMO-ENG-00012\nEvent time: 2026-09-02 13:20 UTC\nRequested departure: 2026-09-09 13:20 UTC\n\nEngine 1 shutdown was reported during descent; the initial message does not distinguish a flameout from a commanded shutdown. The report uses approximate observations; no diagnosis has been verified."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:049",
+    "similarityFamily": "flameout-restart",
+    "case": {
+      "source": "Email",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-004",
+      "aircraftLocation": "Amsterdam (AMS)",
+      "priority": "Pending",
+      "eventTime": "2026-09-07 07:20 UTC",
+      "requestedDepartureDate": "",
+      "engine1": "DEMO-ENG-00007",
+      "engine2": "DEMO-ENG-00008",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 2 failed to start on the ground; the flight was cancelled and this was not an in-flight shutdown. A prior related report is mentioned; this is a separate event, not a duplicate message.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract. Missing intake fields: requestedDepartureDate.",
+      "originalText": "[IFSD-DEMO-50-v1:049] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nSubject: Demo engine event report\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-004\nAircraft location: Amsterdam (AMS)\nEngine 1 Number: DEMO-ENG-00007\nEngine 2 Number: DEMO-ENG-00008\nEvent time: 2026-09-07 07:20 UTC\n\nEngine 2 failed to start on the ground; the flight was cancelled and this was not an in-flight shutdown. A prior related report is mentioned; this is a separate event, not a duplicate message."
+    }
+  },
+  {
+    "demoKey": "IFSD-DEMO-50-v1:050",
+    "similarityFamily": "flameout-restart",
+    "case": {
+      "source": "Phone Transcript",
+      "customer": "Demo Atlantic Connect",
+      "aircraftId": "DEMO-AC-005",
+      "aircraftLocation": "London Heathrow (LHR)",
+      "priority": "5 - Lowest",
+      "eventTime": "2026-09-12 08:20 UTC",
+      "requestedDepartureDate": "2026-10-17 08:20 UTC",
+      "engine1": "DEMO-ENG-00009",
+      "engine2": "DEMO-ENG-00010",
+      "problemNotes": "[SYNTHETIC DEMO] Engine 1 lost thrust during cruise and recovered; whether combustion was lost remains unconfirmed. Ground observations are available; no validated root cause is recorded.",
+      "assistantSuggestions": "DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.",
+      "originalText": "[IFSD-DEMO-50-v1:050] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\nCall transcript: Duty engineer reporting a new event.\nCustomer: Demo Atlantic Connect\nAircraft ID: DEMO-AC-005\nAircraft location: London Heathrow (LHR)\nEngine 1 Number: DEMO-ENG-00009\nEngine 2 Number: DEMO-ENG-00010\nEvent time: 2026-09-12 08:20 UTC\nRequested departure: 2026-10-17 08:20 UTC\n\nEngine 1 lost thrust during cruise and recovered; whether combustion was lost remains unconfirmed. Ground observations are available; no validated root cause is recorded."
+    }
+  }
+]
