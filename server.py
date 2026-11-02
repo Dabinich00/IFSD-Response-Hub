@@ -5,6 +5,10 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import threading
+import time
+import uuid
+from concurrent.futures import ThreadPoolExecutor
 import sqlite3
 import database
 from http import HTTPStatus
@@ -17,6 +21,32 @@ PORT = int(os.environ.get("IFSD_PORT", "8000"))
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
 MODEL_NAME = os.environ.get("WHISPER_MODEL", "base")
 _model = None
+_jobs = {}
+_jobs_lock = threading.Lock()
+_worker = ThreadPoolExecutor(max_workers=1)
+
+
+def transcribe_job(job_id, temp_path, language):
+    def update(**values):
+        with _jobs_lock:
+            _jobs[job_id].update(values)
+
+    try:
+        update(status="loading")
+        model = get_model()
+        update(status="transcribing")
+        segments, info = model.transcribe(
+            str(temp_path), language=language, beam_size=5, vad_filter=True
+        )
+        text = " ".join(segment.text.strip() for segment in segments).strip()
+        if not text:
+            raise ValueError("Keine Sprache erkannt")
+        update(status="done", text=text, language=info.language)
+    except Exception as error:
+        update(status="error", error=f"Transkription fehlgeschlagen: {error}")
+    finally:
+        temp_path.unlink(missing_ok=True)
+        update(finished_at=time.monotonic())
 
 
 def get_model():
@@ -93,15 +123,27 @@ class IFSDHandler(SimpleHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        self.send_header("Cache-Control", "no-store")
+        try:
+            self.end_headers()
+            self.wfile.write(body)
+        except (ConnectionError, BrokenPipeError):
+            self.log_message("Client disconnected; response could not be delivered")
 
     def do_GET(self):
         path = urlparse(self.path).path
         if path == '/api/cases' or path.startswith('/api/cases/'):
             self.case_api()
             return
+        if path.startswith("/api/transcriptions/"):
+            with _jobs_lock:
+                job = _jobs.get(path.rsplit("/", 1)[-1])
+                result = dict(job) if job else None
+            self.send_json(result or {"error": "Auftrag nicht gefunden"},
+                           HTTPStatus.OK if result else HTTPStatus.NOT_FOUND)
+            return
         super().do_GET()
+
 
 
     def do_POST(self) -> None:
@@ -130,13 +172,18 @@ class IFSDHandler(SimpleHTTPRequestHandler):
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as audio_file:
                 temp_path = Path(audio_file.name)
                 audio_file.write(self.rfile.read(length))
-            segments, info = get_model().transcribe(
-                str(temp_path), language=language, beam_size=5, vad_filter=True
-            )
-            text = " ".join(segment.text.strip() for segment in segments).strip()
-            if not text:
-                raise ValueError("Keine Sprache erkannt")
-            self.send_json({"text": text, "language": info.language, "model": MODEL_NAME})
+            with _jobs_lock:
+                for key, job in list(_jobs.items()):
+                    if time.monotonic() - job.get("finished_at", time.monotonic()) > 3600:
+                        del _jobs[key]
+                if any(job["status"] not in ("done", "error") for job in _jobs.values()):
+                    self.send_json({"error": "Eine Transkription läuft bereits. Bitte warten."}, HTTPStatus.CONFLICT)
+                    return
+                job_id = uuid.uuid4().hex
+                _jobs[job_id] = {"status": "queued", "model": MODEL_NAME}
+            _worker.submit(transcribe_job, job_id, temp_path, language)
+            temp_path = None  # The worker now owns and deletes the recording.
+            self.send_json({"job_id": job_id}, HTTPStatus.ACCEPTED)
         except ImportError as error:
             self.send_json(
                 {

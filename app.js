@@ -66,8 +66,27 @@ async function transcribeRecording(stream){
   const audioBlob=new Blob(audioChunks,{type:mediaRecorder.mimeType||'audio/webm'});
   const language=document.getElementById('transcriptionLanguage').value;
   const response=await fetch(`/api/transcribe${language?`?language=${language}`:''}`,{method:'POST',headers:{'Content-Type':audioBlob.type},body:audioBlob});
-  const result=await response.json();
+  let result=await response.json();
   if(!response.ok)throw new Error(result.error||'Transkription fehlgeschlagen');
+  const jobId=result.job_id;
+  if(!jobId)throw new Error('Bitte Python-Server neu starten und Seite neu laden.');
+  const started=Date.now();
+  let failures=0;
+  while(true){
+   await new Promise(resolve=>setTimeout(resolve,1000));
+   let poll;
+   try{
+    poll=await fetch(`/api/transcriptions/${jobId}`,{cache:'no-store',signal:AbortSignal.timeout(10000)});
+    result=await poll.json();failures=0;
+   }catch(error){
+    if(++failures>=5)throw new Error('Verbindung zum Server verloren. Bitte Server prüfen.');
+    setRecorderStatus('Verbindung wird wiederhergestellt …','working');continue;
+   }
+   if(!poll.ok||result.status==='error')throw new Error(result.error||'Transkription fehlgeschlagen');
+   if(result.status==='done')break;
+   const stage=result.status==='loading'?'Modell wird geladen / heruntergeladen':result.status==='queued'?'Warteschlange':'Transkription läuft';
+   setRecorderStatus(`${stage} · ${result.model} · ${Math.floor((Date.now()-started)/1000)} s`,'working');
+  }
   document.getElementById('sourceText').value=result.text;
   setRecorderStatus(`Fertig · ${result.language||'auto'}`,'success');
  }catch(error){setRecorderStatus(error.message.includes('Failed to fetch')?'Lokaler Whisper-Server nicht erreichbar':error.message,'error');}
