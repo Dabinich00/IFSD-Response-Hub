@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import sqlite3
+import database
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -27,6 +29,65 @@ def get_model():
 
 
 class IFSDHandler(SimpleHTTPRequestHandler):
+    def send_head(self):
+        # Serve only public assets; never expose the database, source or Git files.
+        path = urlparse(self.path).path
+        if path not in ('/', '/index.html', '/app.js', '/styles.css'):
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return None
+        return super().send_head()
+
+    def case_api(self):
+        parsed = urlparse(self.path)
+        parts = parsed.path.strip('/').split('/')
+        try:
+            if self.command == 'GET':
+                if len(parts) == 2:
+                    query = parse_qs(parsed.query)
+                    result = database.list_cases(query.get('q', [''])[0], query.get('deleted', ['0'])[0] == '1')
+                elif len(parts) == 3:
+                    result = database.get(parts[2])
+                else:
+                    raise KeyError(parsed.path)
+                self.send_json(result)
+                return
+            if self.headers.get('Content-Type', '').split(';')[0].strip() != 'application/json':
+                raise ValueError('Content-Type must be application/json.')
+            length = int(self.headers.get('Content-Length', '0'))
+            if not 0 < length <= 1024 * 1024:
+                raise ValueError('Invalid request size (maximum 1 MB).')
+            payload = json.loads(self.rfile.read(length))
+            if self.command == 'POST' and len(parts) == 2:
+                result = database.create(payload)
+                self.send_json(result, HTTPStatus.CREATED)
+                return
+            if self.command == 'PUT' and len(parts) == 3:
+                result = database.change(parts[2], payload)
+            elif self.command == 'DELETE' and len(parts) == 3:
+                result = database.change(parts[2], payload, 'deleted')
+            elif self.command == 'POST' and len(parts) == 4 and parts[3] == 'restore':
+                result = database.change(parts[2], payload, 'restored')
+            else:
+                raise KeyError(parsed.path)
+            self.send_json(result)
+        except KeyError:
+            self.send_json({'error': 'Case not found.'}, HTTPStatus.NOT_FOUND)
+        except (ValueError, UnicodeError) as error:
+            self.send_json({'error': str(error)}, HTTPStatus.BAD_REQUEST)
+        except database.ConflictError as error:
+            self.send_json({'error': str(error)}, HTTPStatus.CONFLICT)
+        except sqlite3.Error:
+            self.send_json({'error': 'Database unavailable. Please retry.'}, HTTPStatus.SERVICE_UNAVAILABLE)
+
+    def do_PUT(self):
+        if urlparse(self.path).path.startswith('/api/cases/'):
+            self.case_api()
+        else:
+            self.send_error(HTTPStatus.NOT_FOUND)
+
+    def do_DELETE(self):
+        self.do_PUT()
+
     def send_json(self, payload: dict, status: HTTPStatus = HTTPStatus.OK) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
@@ -35,8 +96,19 @@ class IFSDHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def do_GET(self):
+        path = urlparse(self.path).path
+        if path == '/api/cases' or path.startswith('/api/cases/'):
+            self.case_api()
+            return
+        super().do_GET()
+
+
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path == '/api/cases' or parsed.path.startswith('/api/cases/'):
+            self.case_api()
+            return
         if parsed.path != "/api/transcribe":
             self.send_json({"error": "Endpoint nicht gefunden"}, HTTPStatus.NOT_FOUND)
             return
@@ -84,6 +156,7 @@ class IFSDHandler(SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     os.chdir(Path(__file__).resolve().parent)
+    database.initialize()
     print(f"IFSD Response Hub: http://{HOST}:{PORT}")
     print(f"Whisper model: {MODEL_NAME} (first use downloads the model)")
     ThreadingHTTPServer((HOST, PORT), IFSDHandler).serve_forever()
