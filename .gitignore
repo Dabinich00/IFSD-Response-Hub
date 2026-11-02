@@ -4,5 +4,6 @@ Thumbs.db
 .vscode/
 *.log
 .venv*/
+data/
 __pycache__/
 *.py[cod]
