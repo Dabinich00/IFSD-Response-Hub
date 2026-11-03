@@ -9,7 +9,7 @@ document.querySelectorAll('.tabs button').forEach((b,index)=>{if(index===0)b.cla
 
 const fields=[
  {key:'caseId',label:'Case ID',readonly:true},
- {key:'source',label:'Source',type:'source',required:true},
+ {key:'source',label:'Source',type:'source'},
  {key:'customer',label:'Customer',expected:true},
  {key:'aircraftId',label:'Aircraft ID',expected:true},
  {key:'aircraftLocation',label:'Aircraft Location',expected:true},
@@ -41,7 +41,7 @@ if(startRecordingButton&&stopRecordingButton){
    mediaRecorder.onstop=()=>transcribeRecording(stream);
    mediaRecorder.start();recordingStartedAt=Date.now();updateRecordingTimer();recordingTimerId=setInterval(updateRecordingTimer,500);
    startRecordingButton.disabled=true;stopRecordingButton.disabled=false;setRecorderStatus('Aufnahme läuft','recording');
-  }catch(error){setRecorderStatus(error.name==='NotAllowedError'?'Mikrofon nicht freigegeben':'Aufnahme nicht möglich','error');}
+  }catch(error){setRecorderStatus(error.name==='NotAllowedError'?'Allow microphone access to record.':'Aufnahme nicht möglich','error');}
  };
 
  stopRecordingButton.onclick=()=>{
@@ -52,6 +52,7 @@ if(startRecordingButton&&stopRecordingButton){
 function setRecorderStatus(message,state='idle'){
  const status=document.getElementById('recorderStatus');if(!status)return;
  status.textContent=message;status.dataset.state=state;
+ setButtonBusy(stopRecordingButton,state==='working','Processing?','? Stop & transcribe');
 }
 
 function updateRecordingTimer(){
@@ -70,7 +71,7 @@ async function transcribeRecording(stream){
   if(!response.ok)throw new Error(result.error||'Transkription fehlgeschlagen');
   const jobId=result.job_id;
   if(!jobId)throw new Error('Bitte Python-Server neu starten und Seite neu laden.');
-  const started=Date.now();
+  
   let failures=0;
   while(true){
    await new Promise(resolve=>setTimeout(resolve,1000));
@@ -84,107 +85,124 @@ async function transcribeRecording(stream){
    }
    if(!poll.ok||result.status==='error')throw new Error(result.error||'Transkription fehlgeschlagen');
    if(result.status==='done')break;
-   const stage=result.status==='loading'?'Modell wird geladen / heruntergeladen':result.status==='queued'?'Warteschlange':'Transkription läuft';
-   setRecorderStatus(`${stage} · ${result.model} · ${Math.floor((Date.now()-started)/1000)} s`,'working');
+   setRecorderStatus('Processing recording?','working');
   }
   document.getElementById('sourceText').value=result.text;
+  updateExtractionButton();
   setRecorderStatus(`Fertig · ${result.language||'auto'}`,'success');
- }catch(error){setRecorderStatus(error.message.includes('Failed to fetch')?'Lokaler Whisper-Server nicht erreichbar':error.message,'error');}
+ }catch(error){console.error('Transcription failed:',error);setRecorderStatus(friendlyProcessingError(error,'recording'),'error');}
  finally{startRecordingButton.disabled=false;mediaRecorder=null;audioChunks=[];}
 }
 
-document.getElementById('extract').onclick=()=>{
- if(caseSaving||!canReplaceCase())return;
- const sourceText=document.getElementById('sourceText').value.trim();
- if(!sourceText){document.getElementById('saveStatus').textContent='Enter a message first.';return;}
- const activeTab=document.querySelector('.tabs button.active')?.textContent||'E-Mail / Text';
- const data=extractCase(sourceText,activeTab);
- currentCase=data;
- currentCase.originalText=sourceText;
- caseDirty=true;
- document.getElementById('saveStatus').textContent='Not saved. Case ID will be assigned when saving.';
- renderCase(data);
- renderAlerts(data,sourceText);
- document.getElementById('originalText').value=sourceText||'No source text provided.';
- document.getElementById('intake').classList.add('case-created');
- syncDashboard(data,sourceText);
- document.getElementById('toResponse').disabled=false;
-};
+let extractionBusy=false;
+let lastAppliedText=null;
+let extractionViewVersion=0;
+const extractionButton=document.getElementById('extract');
+const extractionStatus=document.getElementById('extractionStatus');
+const retryExtraction=document.getElementById('retryExtraction');
+function normalizedSource(){return document.getElementById('sourceText').value.replace(/\r\n?/g,'\n').trim()}
+function updateExtractionButton(){
+ setButtonBusy(extractionButton,extractionBusy,'Processing?','Create Case');
+ extractionButton.disabled=extractionBusy||caseSaving||!normalizedSource()||normalizedSource()===lastAppliedText;
+}
+document.getElementById('sourceText').addEventListener('input',()=>{retryExtraction.hidden=true;updateExtractionButton()});
+async function extractionRequest(path,options={}){
+ if(location.protocol==='file:')throw new Error('Open http://127.0.0.1:8000 after starting the Python server.');
+ const response=await fetch(path,{...options,cache:'no-store',signal:AbortSignal.timeout(15000)});
+ let result;
+ try{result=await response.json()}catch{throw new Error('Restart the Python server to enable Codex analysis.')}
+ if(!response.ok)throw new Error(result.error||'Analysis request failed.');
+ return result;
+}
+async function analyzeText(retry=false){
+ if(extractionBusy||caseSaving)return;
+ const text=normalizedSource();
+ if(!text||text===lastAppliedText)return;
+ if(!canReplaceCase())return;
+ const version=extractionViewVersion;
+ const source=/phone|telefon/i.test(document.querySelector('.tabs button.active')?.textContent||'')?'Phone Transcript':'Email';
+ extractionBusy=true;retryExtraction.hidden=true;updateExtractionButton();
+ document.getElementById('toResponse').disabled=true;
+ document.querySelectorAll('[data-case-field]').forEach(input=>input.disabled=true);
+ extractionStatus.textContent='Processing message?';
+ 
+ try{
+  const job=await extractionRequest('/api/extractions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,retry})});
+  let result;
+  for(;;){
+   result=await extractionRequest(`/api/extractions/${job.job_id}`);
+   if(result.status==='error'){retryExtraction.hidden=false;throw new Error(result.error)}
+   if(result.status==='done')break;
+   extractionStatus.textContent='Processing message?';
+   await new Promise(resolve=>setTimeout(resolve,1000));
+  }
+  if(version!==extractionViewVersion||normalizedSource()!==text){extractionStatus.textContent='The message changed. Select Create Case to process the updated text.';return;}
+  currentCase={...result.fields,caseId:'',source,priority:calculatePriority(result.fields.requestedDepartureDate),originalText:text};
+  lastAppliedText=text;caseDirty=true;
+  renderCase(currentCase);renderAlerts(currentCase);
+  document.getElementById('originalText').value=text;
+  document.getElementById('intake').classList.add('case-created');
+  syncDashboard(currentCase,text);
+  document.getElementById('toResponse').disabled=false;
+  document.getElementById('saveStatus').textContent='Review the case details before saving.';
+  extractionStatus.textContent='Case ready for review.';
+ }catch(error){console.error('Case analysis failed:',error);extractionStatus.textContent=friendlyProcessingError(error,'message');}
+ finally{
+  extractionBusy=false;updateExtractionButton();
+  document.getElementById('toResponse').disabled=!currentCase;
+  document.querySelectorAll('[data-case-field]').forEach(input=>input.disabled=false);
+ }
+}
+extractionButton.onclick=()=>analyzeText(false);
+retryExtraction.onclick=()=>{if(window.confirm('Try processing this message again?'))analyzeText(true)};
+updateExtractionButton();
 
-function extractCase(text,activeTab){
- const m=(regex,fallback='')=>(text.match(regex)||[])[1]?.trim()||fallback;
- const requestedDepartureDate=extractRequestedDeparture(text);
- const customer=m(/\bCustomer:\s*([^\n\r]+)/i)||m(/\b(Lufthansa|British Airways|Emirates|Qatar Airways|LHA|BA)\b/i);
- const aircraftLocation=extractAircraftLocation(text);
- return {
-  caseId:'',
-  source:/phone|telefon/i.test(activeTab)?'Phone Transcript':'Email',
-  customer:normalizeCustomer(customer),
-  aircraftId:m(/\b(?:Aircraft ID|Aircraft|Registration|Tail(?: number)?):\s*([A-Z0-9-]{4,12})\b/i)||m(/\b([A-Z]-[A-Z0-9]{4}|N[0-9A-Z]{4,6}|G-[A-Z0-9]{4})\b/i),
-  aircraftLocation,
-  eventTime:extractEventDateTime(text),
-  requestedDepartureDate,
-  engine1:m(/\bEngine\s*1(?:\s*Number|\s*No\.?|\s*ID)?\s*:\s*([A-Z0-9-]{4,24})\b/i),
-  engine2:m(/\bEngine\s*2(?:\s*Number|\s*No\.?|\s*ID)?\s*:\s*([A-Z0-9-]{4,24})\b/i),
-  problemNotes:extractProblemNotes(text),
-  assistantSuggestions:'',
-  priority:calculatePriority(requestedDepartureDate)
- };
+function parseCaseDate(value){
+ if(!value)return null;
+ const text=value.trim();
+ let match=text.match(/^(\d{4})-(\d{2})-(\d{2})(.*)$/);
+ let year,month,day,suffix;
+ if(match){[,year,month,day,suffix]=match}
+ else{
+  match=text.match(/^(\d{1,2})\s*[.,/]\s*(\d{1,2})\s*[.,/]\s*(\d{4}|\d{2})(.*)$/);
+  if(!match)return null;
+  [,day,month,year,suffix]=match;
+  if(year.length===2)year='20'+year;
+ }
+ year=Number(year);month=Number(month)-1;day=Number(day);
+ const date=new Date(year,month,day);
+ if(date.getFullYear()!==year||date.getMonth()!==month||date.getDate()!==day)return null;
+ suffix=suffix.trim().replace(/^T/,'').replace(/^at /i,'');
+ if(suffix&&!/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?(?:\s*(?:Z|[A-Z]{2,5}|[+-](?:[01]\d|2[0-3]):?[0-5]\d))?$/.test(suffix))return null;
+ return {date,text:`${String(day).padStart(2,'0')}.${String(month+1).padStart(2,'0')}.${String(year).padStart(4,'0')}${suffix?' '+suffix:''}`};
 }
 
-function extractRequestedDeparture(text){
- return mDate(/\b(?:depart(?:ure)? again|next departure|requested departure|ready for departure|return to service)\D{0,40}(\d{4}-\d{2}-\d{2}(?:\s+at\s+\d{1,2}:\d{2}\s*UTC)?)\b/i,text)
-  ||mDate(/\b(\d{4}-\d{2}-\d{2}(?:\s+at\s+\d{1,2}:\d{2}\s*UTC)?)\b/i,text);
-}
-
-function mDate(regex,text){return (text.match(regex)||[])[1]?.trim()||''}
-
-function extractEventDateTime(text){
- const eventMatch=text.match(/\b(?:event|shutdown|reported|occurred)\D{0,60}(\d{4}-\d{2}-\d{2})\D{0,20}(\d{1,2}:\d{2}\s*UTC)\b/i);
- if(eventMatch)return `${eventMatch[1]} ${eventMatch[2]}`;
- return mDate(/\b(?:event|shutdown|reported|occurred)\D{0,60}(\d{1,2}:\d{2}\s*UTC)\b/i,text)
-  ||mDate(/\b(\d{1,2}:\d{2}\s*UTC)\b/i,text);
-}
-
-function extractAircraftLocation(text){
- const diverted=(text.match(/\bdiverted to\s+([A-Za-z -]+?)(?:\.|,| and|$)/i)||[])[1];
- const onGround=(text.match(/\b(?:on ground|located|currently)\s+(?:in|at|there\s*in)?\s*([A-Za-z -]+?)(?:\.|,| and|$)/i)||[])[1];
- return (diverted||onGround||'').trim();
-}
-
-function normalizeCustomer(value){
- const v=(value||'').trim();
- if(/^LHA$/i.test(v))return 'Lufthansa';
- if(/^BA$/i.test(v))return 'British Airways';
- return v;
-}
-
-function extractProblemNotes(text){
- const sentences=text.split(/(?<=[.!?])\s+/).filter(Boolean);
- const relevant=sentences.filter(s=>/\b(shutdown|IFSD|vibration|EGT|oil|failure|failed|AOG|ground)\b/i.test(s));
- return (relevant.slice(0,2).join(' ')||sentences[0]||'').trim();
-}
-
-function calculatePriority(requestedDepartureDate){
- if(!requestedDepartureDate)return 'Pending';
- const dateMatch=requestedDepartureDate.match(/\d{4}-\d{2}-\d{2}/);
- if(!dateMatch)return 'Pending';
- const requested=new Date(`${dateMatch[0]}T00:00:00`);
- const today=new Date();
- today.setHours(0,0,0,0);
- const days=Math.round((requested-today)/86400000);
- if(days<=1)return '1 - Most urgent';
- if(days<=3)return '2 - Urgent';
- if(days<=14)return '3 - Medium';
- if(days<=30)return '4 - Low';
+function calculatePriority(requestedDepartureDate,referenceDate=new Date()){
+ const parsed=parseCaseDate(requestedDepartureDate);
+ if(!parsed)return 'Pending';
+ const requested=parsed.date;
+ // Calendar months from today; clamp month-end dates (Jan 31 -> Feb 28/29).
+ const levels=['1 - Most urgent','2 - Urgent','3 - Medium','4 - Low'];
+ for(let months=1;months<=4;months++){
+  const boundary=new Date(referenceDate.getFullYear(),referenceDate.getMonth()+months,1);
+  const lastDay=new Date(boundary.getFullYear(),boundary.getMonth()+1,0).getDate();
+  boundary.setDate(Math.min(referenceDate.getDate(),lastDay));
+  if(requested<=boundary)return levels[months-1];
+ }
  return '5 - Lowest';
 }
 
 function renderCase(data){
+ for(const key of ['eventTime','requestedDepartureDate']){
+  const parsed=parseCaseDate(data[key]);
+  if(parsed)data[key]=parsed.text;
+ }
  document.getElementById('fields').innerHTML=fields.map(field=>fieldMarkup(field,data[field.key])).join('');
  document.querySelectorAll('[data-case-field]').forEach(input=>{
   input.oninput=()=>{
    caseDirty=true;
+   input.removeAttribute('aria-invalid');
+   document.getElementById('saveStatus').textContent='';
    currentCase[input.dataset.caseField]=input.value;
    if(input.dataset.caseField==='requestedDepartureDate'){
     currentCase.priority=calculatePriority(input.value);
@@ -193,12 +211,19 @@ function renderCase(data){
    renderAlerts(currentCase,document.getElementById('originalText').value);
    syncDashboard(currentCase,document.getElementById('originalText').value);
   };
+  if(['eventTime','requestedDepartureDate'].includes(input.dataset.caseField)){
+   input.placeholder='DD.MM.YYYY (HH:MM timezone)';
+   input.onblur=()=>{
+    const parsed=parseCaseDate(input.value);
+    if(parsed){input.value=parsed.text;currentCase[input.dataset.caseField]=parsed.text;}
+   };
+  }
  });
 }
 
 function fieldMarkup(field,value){
  const safeValue=escapeHtml(value||'');
- if(field.type==='source')return `<div class="field"><small>Source *</small><select data-case-field="source">${['Email','Phone Transcript'].map(source=>`<option${source===value?' selected':''}>${source}</option>`).join('')}</select></div>`;
+ if(field.type==='source')return `<div class="field"><small>Source</small><select data-case-field="source">${['Email','Phone Transcript'].map(source=>`<option${source===value?' selected':''}>${source}</option>`).join('')}</select></div>`;
  if(field.type==='priority'){
   const options=['Pending',...priorityLevels.filter(Boolean)].map(level=>`<option value="${escapeHtml(level)}"${level===(value||'Pending')?' selected':''}>${escapeHtml(level)}</option>`).join('');
   return `<div class="field"><small>${field.label}${field.required?' *':''}</small><select data-case-field="${field.key}">${options}</select></div>`;
@@ -209,12 +234,10 @@ function fieldMarkup(field,value){
 
 function renderAlerts(data){
  const alerts=[];
- fields.filter(field=>field.required||field.expected).forEach(field=>{
+ fields.filter(field=>field.expected).forEach(field=>{
   if(!data[field.key]||data[field.key]==='Pending')alerts.push(`${field.label} missing`);
  });
  if(!data.requestedDepartureDate)alerts.push('Requested departure date missing - priority cannot be calculated');
- alerts.push('Human review required before case submission');
- alerts.push('Saving requires Source and Problem / Notes. Other missing details can be added later.');
  document.getElementById('missing').innerHTML=alerts.map(alert=>`<div class="miss">⚠ ${escapeHtml(alert)}</div>`).join('');
 }
 
@@ -267,28 +290,34 @@ async function caseRequest(path='',method='GET',payload){
 }
 
 function openCase(data){
+ extractionViewVersion++;lastAppliedText=null;
  currentCase=data;caseDirty=false;
  renderCase(data);renderAlerts(data);
  document.getElementById('originalText').value=data.originalText||'';
  document.getElementById('sourceText').value=data.originalText||'';
  document.getElementById('intake').classList.add('case-created');
  document.getElementById('toResponse').disabled=false;
- document.getElementById('saveStatus').textContent=data.caseId?`Loaded ${data.caseId}. Changes require Save Case.`:'New case. ID will be assigned when saving.';
+ document.getElementById('saveStatus').textContent='';
  syncDashboard(data,data.originalText||'');
  show('intake');
+ updateExtractionButton();
 }
 
 document.getElementById('newCase').onclick=()=>{
- if(caseSaving||!canReplaceCase())return;
+ if(extractionBusy||caseSaving||!canReplaceCase())return;
  const blank=Object.fromEntries(fields.map(field=>[field.key,'']));
  openCase({...blank,source:'Email',priority:'Pending',originalText:''});
  caseDirty=true;
 };
 
 document.getElementById('toResponse').onclick=async()=>{
- if(!currentCase||caseSaving)return;
+ if(!currentCase||caseSaving||extractionBusy)return;
  const status=document.getElementById('saveStatus');
- if(!currentCase.problemNotes?.trim()){status.textContent='Problem / Notes is required before saving.';return;}
+ if(!currentCase.problemNotes?.trim()){
+  status.textContent='Please fill in Problem / Notes.';
+  const input=document.querySelector('[data-case-field="problemNotes"]');
+  input.setAttribute('aria-invalid','true');input.focus();return;
+ }
  caseSaving=true;
  document.getElementById('toResponse').disabled=true;
  document.getElementById('extract').disabled=true;
@@ -301,11 +330,12 @@ document.getElementById('toResponse').onclick=async()=>{
   renderCase(currentCase);renderAlerts(currentCase);
   syncDashboard(currentCase,currentCase.originalText||'');
   status.textContent=`Saved ${currentCase.caseId}`;
- }catch(error){status.textContent=`Save not confirmed: ${error.message} If the connection failed, check Saved Cases before retrying to avoid a duplicate.`}
+ }catch(error){console.error('Save failed:',error);status.textContent=/date/i.test(error.message)?'Please enter a valid date as DD.MM.YYYY, or leave it empty.':/another window|changed/i.test(error.message)?'This case has changed. Reopen it before saving.':'Unable to confirm saving. Check Saved Cases before trying again.'}
  finally{
   caseSaving=false;
+  setButtonBusy(document.getElementById('toResponse'),false,'Saving?','Save Case');
   document.getElementById('toResponse').disabled=false;
-  document.getElementById('extract').disabled=false;
+  updateExtractionButton();
   document.querySelectorAll('[data-case-field]').forEach(input=>input.disabled=false);
  }
 };
@@ -330,7 +360,7 @@ async function loadCases(){
    const actions=document.createElement('div');actions.className='case-actions';
    const open=document.createElement('button');open.textContent=record.deletedAt?'Restore':'Open';
    open.onclick=async()=>{
-    if(caseSaving)return;
+    if(extractionBusy||caseSaving)return;
     if(!record.deletedAt&&!canReplaceCase())return;
     open.disabled=true;
     try{
@@ -343,7 +373,7 @@ async function loadCases(){
    if(!record.deletedAt){
     const remove=document.createElement('button');remove.textContent='Move to trash';
     remove.onclick=async()=>{
-     if(caseSaving)return;
+     if(extractionBusy||caseSaving)return;
      if(!window.confirm(`Move ${record.caseId} to trash? You can restore it later.`))return;
      if(currentCase?.caseId===record.caseId&&!canReplaceCase())return;
      remove.disabled=true;
@@ -364,3 +394,21 @@ document.getElementById('refreshCases').onclick=loadCases;
 document.getElementById('caseFilter').onchange=loadCases;
 let searchTimer;
 document.getElementById('caseSearch').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(loadCases,250)};
+
+
+function setButtonBusy(button,busy,label,normalLabel){
+ if(!button)return;
+ button.classList.toggle('is-loading',busy);
+ button.setAttribute('aria-busy',String(busy));
+ button.textContent=busy?label:normalLabel;
+}
+
+function friendlyProcessingError(error,kind){
+ const message=String(error.message||'');
+ if(/no speech|keine sprache/i.test(message))return 'No speech detected. Please record again.';
+ if(/sign in|login/i.test(message))return 'Text processing is unavailable. Please check your sign-in in the terminal.';
+ if(/limit|quota/i.test(message))return 'Processing is temporarily unavailable. Please try again later.';
+ if(/timed out|timeout|abort/i.test(message))return 'Processing took too long. Please try again.';
+ if(/fetch|connection|server|verbindung|erreichbar|Python/i.test(message))return 'Unable to connect. Check that the application is running.';
+ return kind==='recording'?'Unable to process the recording. Please try again.':'Unable to process the message. Please try again.';
+}

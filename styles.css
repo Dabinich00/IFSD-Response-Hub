@@ -122,3 +122,12 @@ main{max-width:1120px;padding:26px 22px 42px}
 .saved-case-list article{min-width:0;overflow-wrap:anywhere}
 .case-actions{display:flex;gap:10px;flex-wrap:wrap}
 #saveStatus,#caseListStatus{overflow-wrap:anywhere}
+
+button.is-loading{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:#77838c!important;color:#fff!important;opacity:1!important;cursor:wait!important}
+button.is-loading::before{content:"";width:14px;height:14px;flex:0 0 14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:processing-spin .8s linear infinite}
+button:disabled:not(.is-loading){cursor:not-allowed;opacity:.55}
+@keyframes processing-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){button.is-loading::before{animation:none;border-top-color:#fff;border-right-color:#fff}}
+[aria-invalid="true"]{border-color:#bd3d42!important;outline:2px solid rgba(189,61,66,.18)}
+#extractionStatus:empty,#saveStatus:empty{display:none}
+#extractionStatus{font-size:13px;color:#5c717b}

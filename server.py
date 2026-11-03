@@ -11,6 +11,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 import sqlite3
 import database
+import extraction
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -132,6 +133,12 @@ class IFSDHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+        if path.startswith('/api/extractions/'):
+            try:
+                self.send_json(extraction.get(path.rsplit('/', 1)[-1]))
+            except KeyError:
+                self.send_json({'error': 'Analysis not found.'}, HTTPStatus.NOT_FOUND)
+            return
         if path == '/api/cases' or path.startswith('/api/cases/'):
             self.case_api()
             return
@@ -148,6 +155,25 @@ class IFSDHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path == '/api/extractions':
+            try:
+                if self.headers.get('Content-Type', '').split(';')[0] != 'application/json':
+                    raise ValueError('Expected application/json.')
+                origin = self.headers.get('Origin')
+                if origin and origin != 'http://' + self.headers.get('Host', ''):
+                    raise ValueError('Use the local application page for analysis.')
+                length = int(self.headers.get('Content-Length', '0'))
+                if not 0 < length <= 100000:
+                    raise ValueError('Message too large or missing.')
+                payload = json.loads(self.rfile.read(length))
+                if not isinstance(payload, dict) or type(payload.get('retry', False)) is not bool:
+                    raise ValueError('Invalid analysis request.')
+                self.send_json(extraction.submit(payload.get('text'), payload.get('retry', False)), HTTPStatus.ACCEPTED)
+            except (ValueError, UnicodeError) as error:
+                self.send_json({'error': str(error)}, HTTPStatus.BAD_REQUEST)
+            except RuntimeError as error:
+                self.send_json({'error': str(error)}, HTTPStatus.CONFLICT)
+            return
         if parsed.path == '/api/cases' or parsed.path.startswith('/api/cases/'):
             self.case_api()
             return
@@ -204,6 +230,7 @@ class IFSDHandler(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     os.chdir(Path(__file__).resolve().parent)
     database.initialize()
+    extraction.initialize()
     print(f"IFSD Response Hub: http://{HOST}:{PORT}")
     print(f"Whisper model: {MODEL_NAME} (first use downloads the model)")
     ThreadingHTTPServer((HOST, PORT), IFSDHandler).serve_forever()

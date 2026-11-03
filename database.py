@@ -4,6 +4,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from date_fields import normalize_date
 
 DB_PATH = Path(__file__).resolve().parent / 'data' / 'incidents.db'
 FIELDS = ('source', 'customer', 'aircraftId', 'aircraftLocation', 'priority',
@@ -80,6 +81,11 @@ def validate(payload):
         raise ValueError('Problem / Notes is required before saving.')
     if result['priority'] not in PRIORITIES:
         raise ValueError('Invalid priority.')
+    for field in ('eventTime', 'requestedDepartureDate'):
+        try:
+            result[field] = normalize_date(result[field])
+        except ValueError as error:
+            raise ValueError(f'{field}: enter a valid date as DD.MM.YYYY, or leave it empty.') from error
     return result
 
 def history(db, row, action):

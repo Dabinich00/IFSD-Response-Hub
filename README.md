@@ -89,8 +89,10 @@ Restart an already running server and reload the browser after updating the code
 - All form fields have matching columns, including Source, Customer, Aircraft ID,
   Aircraft Location, Priority, Event Time, Requested Departure Date, Engine 1/2
   Number, Problem / Notes and Assistant Suggestions. Original text is stored too.
-- Dates entered by the user are preserved as text, including incomplete times;
-  creation/update timestamps are UTC. Blank values are not invented.
+- Event/departure dates use DD.MM.YYYY, optionally followed by time and timezone.
+  ISO and numeric day-first dates are normalized on save; two-digit years mean
+  2000?2099. Incomplete or invalid dates must be clarified or left empty.
+  Creation/update audit timestamps remain UTC. Blank values are not invented.
 - Updates require the current revision, preventing one window from silently
   overwriting a newer edit in another window.
 - `incident_history` stores snapshots on create, update, trash and restore.
@@ -114,3 +116,69 @@ node --check app.js
 
 Database tests use temporary databases and do not write demo records into the
 application database. `database.py` owns schema initialization and persistence.
+
+## Local presentation: Codex text-to-case extraction
+
+This feature uses the installed **Codex CLI with ChatGPT login**, with no API key,
+provider fallback or automatic model-call retries. It requires internet and uses
+the signed-in account's Codex allowance. The model processes the text in the cloud.
+Whisper remains the separate local speech-to-text step.
+
+On each presenter's Windows computer:
+
+1. Install a current Codex CLI and Node.js, plus the project's Python dependencies.
+2. Run `codex.cmd login` and sign in to your own ChatGPT account, then check
+   `codex.cmd login status`. `.cmd` avoids PowerShell's script-policy restriction.
+3. Run `.\.venv\Scripts\python.exe server.py` under that same Windows user.
+4. Open http://127.0.0.1:8000, paste or transcribe a message, and select
+   **Analyze text with Codex**. Review the draft and select **Save Case**.
+
+The CLI version must support `--ignore-user-config`, `--ignore-rules`,
+`--ephemeral`, and `--output-schema`. No account tokens are read or copied by this
+application. The CLI handles authentication. API-key login is rejected for this
+workflow. Optionally set `IFSD_CODEX_MODEL` locally to choose a model available to
+your account; otherwise the CLI default is used. Changing the model invalidates
+matching cache entries. A subscription does not imply unlimited requests.
+
+`extraction.py` runs a short, independent task in an empty temporary directory,
+with read-only sandboxing, no approval escalation, user configuration ignored,
+and shell, browser, apps, plugins, hooks, multi-agent, images and memory features
+disabled. The message is passed on stdin, never interpolated into a shell command.
+The application's repository and case database are not supplied to Codex.
+Temporary schema/output files are removed afterward. This is a constrained local
+demo workflow, not a guarantee of complete OS-level isolation from the account.
+
+Only extracted fields are returned. Case ID and source are assigned by the app;
+priority remains the existing deterministic scheduling rule, not an AI safety
+assessment. Unknown facts remain empty. The server checks field types and lengths;
+JSON validity does not guarantee factual correctness. Manual verification remains
+required. No regular-expression extraction fallback is silently used.
+
+Repeated-click protection:
+- The button is disabled while analysis runs and after applying unchanged text.
+- SHA-256 of normalized text, prompt version and configured model identifies a job.
+  Normalization only trims outer whitespace and normalizes line endings.
+- SQLite atomically claims the job, so concurrent tabs share one model invocation.
+- Results persist in `data/extraction-cache.db` across reloads/server restarts.
+  Source changes do not trigger another analysis. Previous text reuses its result.
+- Failed/interrupted jobs are not retried by ordinary clicks. **Retry failed
+  analysis** requires an explicit confirmation and may consume allowance again.
+- A new message while another task runs is rejected rather than silently queued.
+- The CLI task has a 180-second deadline. Network polling never starts a new task.
+
+The cache contains extracted case data and is local/ignored by Git, like the main
+case database. It is not served by the web server. Removing the cache or changing
+the prompt version allows reanalysis, so retain it during the presentation.
+Tests use temporary caches and mocked Codex responses, without spending allowance:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest test_extraction -v
+```
+
+AI descriptions, clarification questions and location wording are generated in
+English regardless of source language. Identifiers and original source text are
+preserved. Relative dates without an explicit reference date remain empty and
+produce a clarification question. The extraction cache version changes when these
+rules change; an older cached response is not reused under the new rules. Existing
+saved descriptions are not automatically translated. Legacy ISO case dates are
+formatted when opened and normalized in storage on the next save.

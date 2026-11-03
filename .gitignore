@@ -5,5 +5,8 @@ Thumbs.db
 *.log
 .venv*/
 data/
+.env
+.env.*
+!.env.example
 __pycache__/
 *.py[cod]
