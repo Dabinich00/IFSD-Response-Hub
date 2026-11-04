@@ -133,7 +133,11 @@ document.getElementById('extract').onclick=async()=>{
   if(!aiAvailable)throw new Error('local AI not running');
   const ai=await aiExtract(sourceText);
   let used=0;
-  for(const [key,value] of Object.entries(ai.fields||{}))if(value){data[key]=value;used++}
+  for(const [key,value] of Object.entries(ai.fields||{})){
+   if(!value)continue;
+   if((key==='requestedDepartureDate'||key==='eventTime')&&data[key]&&!/\d{4}-\d{2}-\d{2}/.test(value))continue;
+   data[key]=value;used++;
+  }
   extractionInfo={method:'ai',detail:ai.model};
   setExtractStatus(`Extracted with local AI · ${ai.model} · ${used} field(s) · verify before saving`,'success');
  }catch(error){
@@ -174,13 +178,12 @@ function extractCase(text,activeTab){
   source:/phone|telefon/i.test(activeTab)?'Phone Transcript':'Email',
   customer:normalizeCustomer(customer),
   aircraftId:m(/\b(?:Aircraft ID|Aircraft|Registration|Tail(?: number)?):\s*([A-Z0-9-]{4,12})\b/i)
-   ||m(new RegExp(`\\b(?:[Aa]ircraft|[Rr]egistration|[Tt]ail(?: number)?)\\s+(?:is\\s+)?${id}`))
+   ||m(new RegExp(`\\b(?:[Aa]ircraft|[Rr]egistration|[Tt]ail(?: number)?|[Mm]aschine|[Ff]lugzeug|[Kk]ennzeichen)\\s+(?:is\\s+|ist\\s+)?${id}`))
    ||m(/\b([A-Z]-[A-Z]{4}|N[0-9][0-9A-Z]{2,5}|G-[A-Z]{4})\b/),
   aircraftLocation,
   eventTime:extractEventDateTime(text),
   requestedDepartureDate,
-  engine1:engine(1),
-  engine2:engine(2),
+  ...engines(text,engine,id),
   problemNotes:extractProblemNotes(text),
   assistantSuggestions:'',
   priority:calculatePriority(requestedDepartureDate)
@@ -230,14 +233,24 @@ function suggestPriority(data){
 }
 function priorityNote(s){return `Priority suggestion: ${s.priority} — ${s.reasons.join('; ')}. Review and adjust if needed.`}
 
+function engines(text,engine,id){
+ let e1=engine(1),e2=engine(2);
+ if(!e1&&!e2){
+  const serial=(text.match(new RegExp(`\\b(?:[Tt]riebwerks?(?:nummer|seriennummer)?|[Ee]ngine (?:serial|number)|ESN)\\s*:?\\s*${id}`))||[])[1];
+  if(serial){const pos=(text.match(/\b(?:engine|triebwerk)\s*([12])\b/i)||[])[1];if(pos==='2')e2=serial;else e1=serial;}
+ }
+ return {engine1:e1,engine2:e2};
+}
+
 function relativeDeparture(text){
- // Spoken requests: "back in service tomorrow", "depart again today", "ready in 3 days"
- const ctx=/\b(?:back in service|in service|depart\w*|return to service|ready|fly again|wieder\s+fliegen|abflug)\b[^.]{0,60}/i.exec(text);
- if(!ctx)return '';
- const s=ctx[0],day=new Date();
- if(/\btomorrow\b|\bmorgen\b/i.test(s))day.setDate(day.getDate()+1);
- else if(/\bin\s+(\d+)\s+days?\b/i.test(s))day.setDate(day.getDate()+Number(s.match(/\bin\s+(\d+)\s+days?\b/i)[1]));
- else if(!/\btoday\b|\bheute\b/i.test(s))return '';
+ // Spoken requests: "back in service tomorrow", "brauchen es übermorgen wieder", "ready in 3 days"
+ if(!/\b(?:back in service|in service|depart\w*|return to service|ready|fly again|need|wieder|brauchen|abflug|einsatzbereit)/i.test(text))return '';
+ const day=new Date();
+ if(/übermorgen|day after tomorrow/i.test(text))day.setDate(day.getDate()+2);
+ else if(/\btomorrow\b|(?:^|[^ü\w])morgen\b/i.test(text))day.setDate(day.getDate()+1);
+ else if(/\bin\s+(\d+)\s+(?:days?|tagen)\b/i.test(text))day.setDate(day.getDate()+Number(text.match(/\bin\s+(\d+)\s+(?:days?|tagen)\b/i)[1]));
+ else if(!/\btoday\b|\bheute\b/i.test(text))return '';
+ if(/\d{4}-\d{2}-\d{2}/.test(text)&&/(?:depart(?:ure)? again|requested departure|return to service)\D{0,40}\d{4}-\d{2}-\d{2}/i.test(text))return '';
  return day.toISOString().slice(0,10);
 }
 
@@ -256,6 +269,8 @@ function extractEventDateTime(text){
 }
 
 function extractAircraftLocation(text){
+ const german=(text.match(/\bnach\s+([A-ZÄÖÜ][\wäöüß-]+)\s+(?:ausgewichen|umgeleitet|gelandet|zurückgekehrt)/)||text.match(/\b(?:steht|befindet sich)\s+(?:\w+\s+){0,3}in\s+([A-ZÄÖÜ][\wäöüß-]+)/)||[])[1];
+ if(german)return german;
  const labelled=(text.match(/\bAircraft location:\s*([^\n\r]+)/i)||[])[1];
  if(labelled)return labelled.trim();
  const diverted=(text.match(/\bdiverted to\s+([A-Za-z -]+?)(?:\.|,| and|$)/i)||[])[1];
@@ -274,7 +289,7 @@ function extractProblemNotes(text){
  // Ignore header lines ("Customer: …", "Subject: …", dataset markers) so they are not merged into the notes.
  const body=text.split(/\r?\n/).filter(line=>!/^\s*(\[[^\]]+\]|(Subject|From|To|Date|Customer|Aircraft(?: ID| location)?|Registration|Tail(?: number)?|Engine\s*[12](?:\s*Number)?|Event time|Requested departure|Call transcript):)/i.test(line)).join(' ');
  const sentences=body.split(/(?<=[.!?])\s+/).filter(Boolean);
- const relevant=sentences.filter(s=>/\b(shutdown|IFSD|vibration|EGT|oil|failure|failed|AOG|ground)\b/i.test(s));
+ const relevant=sentences.filter(s=>/shut ?down|\bIFSD\b|vibrat|\bEGT\b|\boil\b|fail|\bAOG\b|flame|surge|bird|smoke|odou?r|fire|thrust|abgeschaltet|ausgefallen|Vögel|Vogel|\bRauch|(?:^|\s)Öl|Schubverlust/i.test(s));
  return (relevant.slice(0,2).join(' ')||sentences[0]||'').trim();
 }
 

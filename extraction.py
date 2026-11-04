@@ -95,7 +95,11 @@ def sanitize(raw, text):
         if not isinstance(value, str):
             value = ''
         value = value.strip()[:2000 if field == 'problemNotes' else 200]
-        if value.lower() in ('', 'unknown', 'n/a', 'none', 'null', 'not stated', 'not provided'):
+        if value.lower().strip('.') in ('', 'unknown', 'n/a', 'none', 'null', 'not stated', 'not provided', 'not specified',
+                                        'nicht angegeben', 'unbekannt', 'keine angabe', 'k.a', 'nicht bekannt'):
+            value = ''
+        # Times and dates must contain a number (relative words are resolved in the browser).
+        if value and field in ('eventTime', 'requestedDepartureDate') and not re.search(r'\d', value):
             value = ''
         if value and field in VERBATIM and _normalize(value) not in source:
             value = ''
