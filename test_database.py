@@ -68,6 +68,37 @@ class DatabaseTests(unittest.TestCase):
         database.create(self.payload)
         self.assertEqual(database.list_cases("' OR 1=1 --"), [])
 
+    def test_expert_decision_persists_and_requires_expert(self):
+        row = database.create(self.payload)
+        self.assertEqual(row['decision'], '')
+        decided = database.change(row['caseId'], {**row, 'decision': 'approve-plan', 'decisionBy': 'Demo Expert',
+            'decisionNote': 'Send field team', 'assignedResources': 'Shannon service partner', 'decidedAt': '2026-11-04T12:00Z'})
+        self.assertEqual(database.get(row['caseId'])['decision'], 'approve-plan')
+        self.assertEqual(decided['assignedResources'], 'Shannon service partner')
+        with self.assertRaises(ValueError):
+            database.change(row['caseId'], {**decided, 'decisionBy': ''})
+        with self.assertRaises(ValueError):
+            database.change(row['caseId'], {**decided, 'decision': 'auto-approve'})
+
+    def test_v1_database_is_migrated_without_data_loss(self):
+        with database.connection() as db:
+            db.execute('DROP TABLE incident_history')
+            db.execute('DROP TABLE incidents')
+            db.execute('''CREATE TABLE incidents (id INTEGER PRIMARY KEY AUTOINCREMENT, caseId TEXT UNIQUE,
+                source TEXT NOT NULL, customer TEXT NOT NULL DEFAULT '', aircraftId TEXT NOT NULL DEFAULT '',
+                aircraftLocation TEXT NOT NULL DEFAULT '', priority TEXT NOT NULL DEFAULT '', eventTime TEXT NOT NULL DEFAULT '',
+                requestedDepartureDate TEXT NOT NULL DEFAULT '', engine1 TEXT NOT NULL DEFAULT '', engine2 TEXT NOT NULL DEFAULT '',
+                problemNotes TEXT NOT NULL, assistantSuggestions TEXT NOT NULL DEFAULT '', originalText TEXT NOT NULL DEFAULT '',
+                createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL, deletedAt TEXT, revision INTEGER NOT NULL DEFAULT 1)''')
+            db.execute("INSERT INTO incidents (caseId, source, problemNotes, createdAt, updatedAt) VALUES ('OLD-1', 'Email', 'kept', 'x', 'x')")
+            db.execute('PRAGMA user_version = 1')
+        database.initialize()
+        old = database.get('OLD-1')
+        self.assertEqual(old['problemNotes'], 'kept')
+        self.assertEqual(old['decision'], '')
+        with database.connection() as db:
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], database.SCHEMA_VERSION)
+
 class APITests(DatabaseTests):
     def setUp(self):
         super().setUp()

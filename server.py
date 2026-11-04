@@ -11,6 +11,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 import sqlite3
 import database
+import extraction
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -40,10 +41,12 @@ def transcribe_job(job_id, temp_path, language):
         )
         text = " ".join(segment.text.strip() for segment in segments).strip()
         if not text:
-            raise ValueError("Keine Sprache erkannt")
+            raise ValueError("No speech detected")
         update(status="done", text=text, language=info.language)
+    except ImportError:
+        update(status="error", error="Speech-to-text is not installed. Run: python3 -m pip install -r requirements.txt, then restart the server.")
     except Exception as error:
-        update(status="error", error=f"Transkription fehlgeschlagen: {error}")
+        update(status="error", error=f"Transcription failed: {error}")
     finally:
         temp_path.unlink(missing_ok=True)
         update(finished_at=time.monotonic())
@@ -59,13 +62,39 @@ def get_model():
 
 
 class IFSDHandler(SimpleHTTPRequestHandler):
+    extensions_map = {**SimpleHTTPRequestHandler.extensions_map, '.woff2': 'font/woff2', '.geojson': 'application/geo+json'}
+
     def send_head(self):
         # Serve only public assets; never expose the database, source or Git files.
         path = urlparse(self.path).path
-        if path not in ('/', '/index.html', '/app.js', '/styles.css'):
+        if path not in ('/', '/index.html', '/app.js', '/overview.js', '/styles.css') and not self.is_vendor_asset(path):
             self.send_error(HTTPStatus.NOT_FOUND)
             return None
         return super().send_head()
+
+    @staticmethod
+    def is_vendor_asset(path):
+        # Bundled third-party assets (Leaflet, offline world map) so the demo works without internet.
+        if not path.startswith('/vendor/') or '..' in path or '%' in path or '\\' in path:
+            return False
+        vendor = (Path(__file__).resolve().parent / 'vendor').resolve()
+        target = (vendor / path[len('/vendor/'):]).resolve()
+        return (target.is_file() and vendor in target.parents
+                and target.suffix in ('.js', '.css', '.png', '.json', '.geojson', '.woff2'))
+
+    def extract_api(self):
+        try:
+            length = int(self.headers.get('Content-Length', '0'))
+            if not 0 < length <= 256 * 1024:
+                raise ValueError('Invalid request size.')
+            payload = json.loads(self.rfile.read(length))
+            if not isinstance(payload, dict) or not isinstance(payload.get('text'), str):
+                raise ValueError('Expected {"text": "..."}.')
+            self.send_json(extraction.extract(payload['text']))
+        except (ValueError, UnicodeError) as error:
+            self.send_json({'error': str(error)}, HTTPStatus.BAD_REQUEST)
+        except extraction.ExtractionUnavailable as error:
+            self.send_json({'error': str(error)}, HTTPStatus.SERVICE_UNAVAILABLE)
 
     def case_api(self):
         parsed = urlparse(self.path)
@@ -135,11 +164,14 @@ class IFSDHandler(SimpleHTTPRequestHandler):
         if path == '/api/cases' or path.startswith('/api/cases/'):
             self.case_api()
             return
+        if path == '/api/extract/status':
+            self.send_json(extraction.status())
+            return
         if path.startswith("/api/transcriptions/"):
             with _jobs_lock:
                 job = _jobs.get(path.rsplit("/", 1)[-1])
                 result = dict(job) if job else None
-            self.send_json(result or {"error": "Auftrag nicht gefunden"},
+            self.send_json(result or {"error": "Transcription job not found"},
                            HTTPStatus.OK if result else HTTPStatus.NOT_FOUND)
             return
         super().do_GET()
@@ -151,8 +183,11 @@ class IFSDHandler(SimpleHTTPRequestHandler):
         if parsed.path == '/api/cases' or parsed.path.startswith('/api/cases/'):
             self.case_api()
             return
+        if parsed.path == '/api/extract':
+            self.extract_api()
+            return
         if parsed.path != "/api/transcribe":
-            self.send_json({"error": "Endpoint nicht gefunden"}, HTTPStatus.NOT_FOUND)
+            self.send_json({"error": "Endpoint not found"}, HTTPStatus.NOT_FOUND)
             return
 
         try:
@@ -160,7 +195,7 @@ class IFSDHandler(SimpleHTTPRequestHandler):
         except ValueError:
             length = 0
         if not 0 < length <= MAX_AUDIO_BYTES:
-            self.send_json({"error": "Audio fehlt oder ist größer als 25 MB"}, HTTPStatus.BAD_REQUEST)
+            self.send_json({"error": "Audio is missing or larger than 25 MB"}, HTTPStatus.BAD_REQUEST)
             return
 
         media_type = self.headers.get("Content-Type", "audio/webm").split(";", 1)[0]
@@ -177,7 +212,7 @@ class IFSDHandler(SimpleHTTPRequestHandler):
                     if time.monotonic() - job.get("finished_at", time.monotonic()) > 3600:
                         del _jobs[key]
                 if any(job["status"] not in ("done", "error") for job in _jobs.values()):
-                    self.send_json({"error": "Eine Transkription läuft bereits. Bitte warten."}, HTTPStatus.CONFLICT)
+                    self.send_json({"error": "A transcription is already running. Please wait."}, HTTPStatus.CONFLICT)
                     return
                 job_id = uuid.uuid4().hex
                 _jobs[job_id] = {"status": "queued", "model": MODEL_NAME}
@@ -188,14 +223,14 @@ class IFSDHandler(SimpleHTTPRequestHandler):
             self.send_json(
                 {
                     "error": (
-                        "faster-whisper konnte nicht geladen werden. "
-                        f"Details: {error}"
+                        "Speech-to-text is not installed. "
+                        f"Run: python3 -m pip install -r requirements.txt ({error})"
                     )
                 },
                 HTTPStatus.SERVICE_UNAVAILABLE,
             )
         except Exception as error:
-            self.send_json({"error": f"Transkription fehlgeschlagen: {error}"}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            self.send_json({"error": f"Transcription failed: {error}"}, HTTPStatus.INTERNAL_SERVER_ERROR)
         finally:
             if temp_path:
                 temp_path.unlink(missing_ok=True)

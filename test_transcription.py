@@ -64,7 +64,7 @@ class TranscriptionTests(unittest.TestCase):
         with patch.object(server, 'get_model', return_value=model):
             result = self.wait_result(self.submit())
         self.assertEqual(result['status'], 'error')
-        self.assertIn('Keine Sprache erkannt', result['error'])
+        self.assertIn('No speech detected', result['error'])
 
 if __name__ == '__main__':
     unittest.main()

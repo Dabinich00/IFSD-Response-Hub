@@ -3,8 +3,9 @@ let currentCase=null;
 let caseDirty=false;
 let caseSaving=false;
 
-function show(id){views.forEach(v=>v.classList.remove('active'));nav.forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');nav.find(b=>b.dataset.view===id)?.classList.add('active')}
+function show(id){views.forEach(v=>v.classList.remove('active'));nav.forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');nav.find(b=>b.dataset.view===id)?.classList.add('active');if(typeof onViewShown==='function')onViewShown(id)}
 nav.forEach(b=>b.onclick=()=>{show(b.dataset.view);if(b.dataset.view==='cases')loadCases()});
+document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.open)));
 document.querySelectorAll('.tabs button').forEach((b,index)=>{if(index===0)b.classList.add('active');b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active')}});
 
 const fields=[
@@ -32,7 +33,7 @@ const stopRecordingButton=document.getElementById('stopRecording');
 
 if(startRecordingButton&&stopRecordingButton){
  startRecordingButton.onclick=async()=>{
-  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){setRecorderStatus('Browser unterstützt keine Aufnahme','error');return;}
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){setRecorderStatus('This browser cannot record audio','error');return;}
   try{
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
    const preferredType=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
@@ -40,12 +41,12 @@ if(startRecordingButton&&stopRecordingButton){
    mediaRecorder.ondataavailable=event=>{if(event.data.size)audioChunks.push(event.data)};
    mediaRecorder.onstop=()=>transcribeRecording(stream);
    mediaRecorder.start();recordingStartedAt=Date.now();updateRecordingTimer();recordingTimerId=setInterval(updateRecordingTimer,500);
-   startRecordingButton.disabled=true;stopRecordingButton.disabled=false;setRecorderStatus('Aufnahme läuft','recording');
-  }catch(error){setRecorderStatus(error.name==='NotAllowedError'?'Mikrofon nicht freigegeben':'Aufnahme nicht möglich','error');}
+   startRecordingButton.disabled=true;stopRecordingButton.disabled=false;setRecorderStatus('Recording','recording');
+  }catch(error){setRecorderStatus(error.name==='NotAllowedError'?'Microphone access denied':'Recording not possible','error');}
  };
 
  stopRecordingButton.onclick=()=>{
-  if(mediaRecorder?.state==='recording'){mediaRecorder.stop();clearInterval(recordingTimerId);stopRecordingButton.disabled=true;setRecorderStatus('Transkription läuft …','working');}
+  if(mediaRecorder?.state==='recording'){mediaRecorder.stop();clearInterval(recordingTimerId);stopRecordingButton.disabled=true;setRecorderStatus('Transcribing …','working');}
  };
 }
 
@@ -67,9 +68,9 @@ async function transcribeRecording(stream){
   const language=document.getElementById('transcriptionLanguage').value;
   const response=await fetch(`/api/transcribe${language?`?language=${language}`:''}`,{method:'POST',headers:{'Content-Type':audioBlob.type},body:audioBlob});
   let result=await response.json();
-  if(!response.ok)throw new Error(result.error||'Transkription fehlgeschlagen');
+  if(!response.ok)throw new Error(result.error||'Transcription failed');
   const jobId=result.job_id;
-  if(!jobId)throw new Error('Bitte Python-Server neu starten und Seite neu laden.');
+  if(!jobId)throw new Error('Restart the Python server and reload the page.');
   const started=Date.now();
   let failures=0;
   while(true){
@@ -79,26 +80,66 @@ async function transcribeRecording(stream){
     poll=await fetch(`/api/transcriptions/${jobId}`,{cache:'no-store',signal:AbortSignal.timeout(10000)});
     result=await poll.json();failures=0;
    }catch(error){
-    if(++failures>=5)throw new Error('Verbindung zum Server verloren. Bitte Server prüfen.');
-    setRecorderStatus('Verbindung wird wiederhergestellt …','working');continue;
+    if(++failures>=5)throw new Error('Lost connection to the server. Check that it is running.');
+    setRecorderStatus('Reconnecting …','working');continue;
    }
-   if(!poll.ok||result.status==='error')throw new Error(result.error||'Transkription fehlgeschlagen');
+   if(!poll.ok||result.status==='error')throw new Error(result.error||'Transcription failed');
    if(result.status==='done')break;
-   const stage=result.status==='loading'?'Modell wird geladen / heruntergeladen':result.status==='queued'?'Warteschlange':'Transkription läuft';
+   const stage=result.status==='loading'?'Loading speech model (first use downloads it)':result.status==='queued'?'Queued':'Transcribing';
    setRecorderStatus(`${stage} · ${result.model} · ${Math.floor((Date.now()-started)/1000)} s`,'working');
   }
   document.getElementById('sourceText').value=result.text;
-  setRecorderStatus(`Fertig · ${result.language||'auto'}`,'success');
- }catch(error){setRecorderStatus(error.message.includes('Failed to fetch')?'Lokaler Whisper-Server nicht erreichbar':error.message,'error');}
+  setRecorderStatus(`Transcribed · ${result.language||'auto'}`,'success');
+ }catch(error){setRecorderStatus(error.message.includes('Failed to fetch')?'Local server not reachable':error.message,'error');}
  finally{startRecordingButton.disabled=false;mediaRecorder=null;audioChunks=[];}
 }
 
-document.getElementById('extract').onclick=()=>{
+// Local AI extraction (Ollama via server.py) with the rule-based extractor as fallback.
+let extractionInfo={method:'rules',detail:''};
+async function aiExtract(text){
+ if(location.protocol==='file:')throw new Error('server not running');
+ const response=await fetch('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({text}),signal:AbortSignal.timeout(150000)});
+ const result=await response.json();
+ if(!response.ok)throw new Error(result.error||'AI extraction failed');
+ return result;
+}
+function setExtractStatus(message,state='idle'){
+ const el=document.getElementById('extractStatus');if(!el)return;
+ el.textContent=message;el.dataset.state=state;el.hidden=!message;
+}
+async function refreshAiStatus(){
+ if(location.protocol==='file:'){setExtractStatus('Rule-based extraction (start server.py for local AI)');return}
+ try{
+  const s=await(await fetch('/api/extract/status',{cache:'no-store',signal:AbortSignal.timeout(5000)})).json();
+  setExtractStatus(s.available?`Local AI ready · ${s.model}`:'Rule-based extraction · local AI (Ollama) not running',s.available?'success':'idle');
+ }catch{setExtractStatus('Rule-based extraction','idle')}
+}
+refreshAiStatus();
+
+document.getElementById('extract').onclick=async()=>{
  if(caseSaving||!canReplaceCase())return;
  const sourceText=document.getElementById('sourceText').value.trim();
  if(!sourceText){document.getElementById('saveStatus').textContent='Enter a message first.';return;}
  const activeTab=document.querySelector('.tabs button.active')?.textContent||'E-Mail / Text';
+ const button=document.getElementById('extract');
  const data=extractCase(sourceText,activeTab);
+ button.disabled=true;setExtractStatus('Extracting with local AI …','working');
+ try{
+  const ai=await aiExtract(sourceText);
+  let used=0;
+  for(const [key,value] of Object.entries(ai.fields||{}))if(value){data[key]=value;used++}
+  extractionInfo={method:'ai',detail:ai.model};
+  setExtractStatus(`Extracted with local AI · ${ai.model} · ${used} field(s) · verify before saving`,'success');
+ }catch(error){
+  extractionInfo={method:'rules',detail:error.message};
+  setExtractStatus('Rule-based extraction (local AI not available)','idle');
+ }finally{button.disabled=false}
+ data.originalText=sourceText;
+ const suggestion=suggestPriority(data);
+ data.priority=suggestion.priority;
+ data.assistantSuggestions=priorityNote(suggestion)+(extractionInfo.method==='ai'?`\nFields extracted with local AI (${extractionInfo.detail}); verify against the original message.`:'');
+ priorityManual=false;
  currentCase=data;
  currentCase.originalText=sourceText;
  caseDirty=true;
@@ -109,6 +150,7 @@ document.getElementById('extract').onclick=()=>{
  document.getElementById('intake').classList.add('case-created');
  syncDashboard(data,sourceText);
  document.getElementById('toResponse').disabled=false;
+ document.getElementById('toAnalysis').disabled=false;
 };
 
 function extractCase(text,activeTab){
@@ -132,6 +174,49 @@ function extractCase(text,activeTab){
  };
 }
 
+/* ---------- Explainable priority suggestion ----------
+   Combines engineering severity (from the report) with turnaround pressure
+   (requested departure). The more urgent of the two wins. It is a suggestion:
+   the reviewer can change the Priority field, which is then kept. */
+let priorityManual=false;
+const PRIORITY_NAMES=['Pending','1 - Most urgent','2 - Urgent','3 - Medium','4 - Low','5 - Lowest'];
+const SEVERITY_RULES=[
+ [/fire warning|engine fire|\bfire\b|feuer|brand/i,1,'fire warning reported'],
+ [/flamed? ?-?out|loss of combustion/i,1,'flameout reported'],
+ [/shut ?down|shut the engine down|abgeschaltet|\bIFSD\b/i,1,'in-flight shutdown reported'],
+ [/surge|\bbangs?\b/i,2,'suspected compressor surge'],
+ [/bird/i,2,'bird strike reported'],
+ [/thrust loss|lost thrust|loss of thrust|rollback/i,2,'thrust loss reported'],
+ [/oil[- ]pressure|vibrat|\bEGT\b|smoke|odou?r/i,3,'abnormal engine indication'],
+];
+// True if a sentence mentions the term without negating it ("no shutdown occurred").
+function mentionsText(text,re){
+ return String(text||'').split(/(?<=[.!?;])\s+|\n+/).some(s=>{
+  const hit=s.match(re);if(!hit)return false;
+  return !/\b(no|not|without|kein(e|en)?|nicht)\b[^,]{0,40}$/i.test(s.slice(0,hit.index));
+ });
+}
+function suggestPriority(data){
+ const text=`${data.problemNotes||''}\n${data.originalText||''}`;
+ const reasons=[];let level=6;
+ const rule=SEVERITY_RULES.find(([re])=>mentionsText(text,re));
+ if(rule){
+  let sev=rule[1];
+  const onGround=/ground run|ground (check|test|inspection)|after landing|during taxi|on the ground/i.test(text)&&!/in flight|in-flight|cruise|climb|descent|takeoff|take-off|approach/i.test(text);
+  if(onGround&&sev<3){sev=3;reasons.push(`severity ${sev}: ${rule[2]}, but on the ground`)}
+  else reasons.push(`severity ${sev}: ${rule[2]}`);
+  level=Math.min(level,sev);
+ }
+ const turnaround=calculatePriority(data.requestedDepartureDate);
+ if(/^[1-5]/.test(turnaround)){
+  const t=Number(turnaround[0]);level=Math.min(level,t);
+  const days=Math.round((new Date(`${data.requestedDepartureDate.match(/\d{4}-\d{2}-\d{2}/)[0]}T00:00:00`)-new Date().setHours(0,0,0,0))/86400000);
+  reasons.push(`turnaround ${t}: departure requested ${days<0?`${-days} day(s) ago`:days===0?'today':`in ${days} day(s)`}`);
+ }else reasons.push('no requested departure date');
+ return {priority:level<6?PRIORITY_NAMES[level]:'Pending',reasons};
+}
+function priorityNote(s){return `Priority suggestion: ${s.priority} — ${s.reasons.join('; ')}. Review and adjust if needed.`}
+
 function extractRequestedDeparture(text){
  return mDate(/\b(?:depart(?:ure)? again|next departure|requested departure|ready for departure|return to service)\D{0,40}(\d{4}-\d{2}-\d{2}(?:\s+at\s+\d{1,2}:\d{2}\s*UTC)?)\b/i,text)
   ||mDate(/\b(\d{4}-\d{2}-\d{2}(?:\s+at\s+\d{1,2}:\d{2}\s*UTC)?)\b/i,text);
@@ -147,6 +232,8 @@ function extractEventDateTime(text){
 }
 
 function extractAircraftLocation(text){
+ const labelled=(text.match(/\bAircraft location:\s*([^\n\r]+)/i)||[])[1];
+ if(labelled)return labelled.trim();
  const diverted=(text.match(/\bdiverted to\s+([A-Za-z -]+?)(?:\.|,| and|$)/i)||[])[1];
  const onGround=(text.match(/\b(?:on ground|located|currently)\s+(?:in|at|there\s*in)?\s*([A-Za-z -]+?)(?:\.|,| and|$)/i)||[])[1];
  return (diverted||onGround||'').trim();
@@ -160,7 +247,9 @@ function normalizeCustomer(value){
 }
 
 function extractProblemNotes(text){
- const sentences=text.split(/(?<=[.!?])\s+/).filter(Boolean);
+ // Ignore header lines ("Customer: …", "Subject: …", dataset markers) so they are not merged into the notes.
+ const body=text.split(/\r?\n/).filter(line=>!/^\s*(\[[^\]]+\]|(Subject|From|To|Date|Customer|Aircraft(?: ID| location)?|Registration|Tail(?: number)?|Engine\s*[12](?:\s*Number)?|Event time|Requested departure|Call transcript):)/i.test(line)).join(' ');
+ const sentences=body.split(/(?<=[.!?])\s+/).filter(Boolean);
  const relevant=sentences.filter(s=>/\b(shutdown|IFSD|vibration|EGT|oil|failure|failed|AOG|ground)\b/i.test(s));
  return (relevant.slice(0,2).join(' ')||sentences[0]||'').trim();
 }
@@ -186,8 +275,9 @@ function renderCase(data){
   input.oninput=()=>{
    caseDirty=true;
    currentCase[input.dataset.caseField]=input.value;
-   if(input.dataset.caseField==='requestedDepartureDate'){
-    currentCase.priority=calculatePriority(input.value);
+   if(input.dataset.caseField==='priority')priorityManual=true;
+   if(['requestedDepartureDate','problemNotes'].includes(input.dataset.caseField)&&!priorityManual){
+    currentCase.priority=suggestPriority(currentCase).priority;
     document.querySelector('[data-case-field="priority"]').value=currentCase.priority;
    }
    renderAlerts(currentCase,document.getElementById('originalText').value);
@@ -212,10 +302,12 @@ function renderAlerts(data){
  fields.filter(field=>field.required||field.expected).forEach(field=>{
   if(!data[field.key]||data[field.key]==='Pending')alerts.push(`${field.label} missing`);
  });
- if(!data.requestedDepartureDate)alerts.push('Requested departure date missing - priority cannot be calculated');
+ const suggestion=suggestPriority(data);
+ const why=`<div class="priority-why"><b>Suggested priority: ${escapeHtml(suggestion.priority)}</b><span>${suggestion.reasons.map(escapeHtml).join(' · ')}</span>${data.priority&&data.priority!==suggestion.priority?`<em>Reviewer set ${escapeHtml(data.priority)}</em>`:''}</div>`;
+ if(!data.requestedDepartureDate)alerts.push('Requested departure date missing - turnaround urgency cannot be calculated');
  alerts.push('Human review required before case submission');
  alerts.push('Saving requires Source and Problem / Notes. Other missing details can be added later.');
- document.getElementById('missing').innerHTML=alerts.map(alert=>`<div class="miss">⚠ ${escapeHtml(alert)}</div>`).join('');
+ document.getElementById('missing').innerHTML=why+alerts.map(alert=>`<div class="miss">⚠ ${escapeHtml(alert)}</div>`).join('');
 }
 
 function syncDashboard(data,sourceText){
@@ -231,18 +323,18 @@ function syncDashboard(data,sourceText){
  text('dashboardSyncStatus',`Synced from intake · ${data.aircraftId||'Aircraft ID open'}`);
  text('dashboardNotes',sourceText.length>150?`${sourceText.slice(0,147)}…`:sourceText);
  document.getElementById('dashboardLevel').classList.toggle('review',!String(data.priority).startsWith('1'));
+ if(typeof renderDashboardExtras==='function')renderDashboardExtras(data);
 }
 
 function escapeHtml(value){
  return String(value).replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character]));
 }
 
-const dashboardClock=document.getElementById('dashboardClock');
 function updateDashboardClock(){
  const now=new Date();
  const time=now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
  const date=now.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
- dashboardClock.textContent=`${time}  ${date}`;
+ document.querySelectorAll('.js-clock').forEach(clock=>clock.textContent=`${time}  ${date}`);
 }
 updateDashboardClock();
 setInterval(updateDashboardClock,30000);
@@ -267,12 +359,13 @@ async function caseRequest(path='',method='GET',payload){
 }
 
 function openCase(data){
- currentCase=data;caseDirty=false;
+ currentCase=data;caseDirty=false;priorityManual=true; // keep the saved priority
  renderCase(data);renderAlerts(data);
  document.getElementById('originalText').value=data.originalText||'';
  document.getElementById('sourceText').value=data.originalText||'';
  document.getElementById('intake').classList.add('case-created');
  document.getElementById('toResponse').disabled=false;
+ document.getElementById('toAnalysis').disabled=false;
  document.getElementById('saveStatus').textContent=data.caseId?`Loaded ${data.caseId}. Changes require Save Case.`:'New case. ID will be assigned when saving.';
  syncDashboard(data,data.originalText||'');
  show('intake');
@@ -282,7 +375,7 @@ document.getElementById('newCase').onclick=()=>{
  if(caseSaving||!canReplaceCase())return;
  const blank=Object.fromEntries(fields.map(field=>[field.key,'']));
  openCase({...blank,source:'Email',priority:'Pending',originalText:''});
- caseDirty=true;
+ caseDirty=true;priorityManual=false;
 };
 
 document.getElementById('toResponse').onclick=async()=>{
@@ -301,6 +394,7 @@ document.getElementById('toResponse').onclick=async()=>{
   renderCase(currentCase);renderAlerts(currentCase);
   syncDashboard(currentCase,currentCase.originalText||'');
   status.textContent=`Saved ${currentCase.caseId}`;
+  if(typeof onCaseSaved==='function')onCaseSaved(currentCase);
  }catch(error){status.textContent=`Save not confirmed: ${error.message} If the connection failed, check Saved Cases before retrying to avoid a duplicate.`}
  finally{
   caseSaving=false;
@@ -326,7 +420,7 @@ async function loadCases(){
    const card=document.createElement('article');
    const title=document.createElement('h3');title.textContent=record.caseId;
    const detail=document.createElement('p');detail.textContent=[record.customer||'Customer unknown',record.aircraftId||'Aircraft unknown',record.aircraftLocation||'Location unknown',record.priority||'Pending'].join(' · ');
-   const notes=document.createElement('p');notes.textContent=record.problemNotes;
+   const notes=document.createElement('p');const shortNotes=(record.problemNotes||'').replace('[SYNTHETIC DEMO] ','');notes.textContent=record.problemNotes.length>=160?shortNotes.replace(/\s+\S*$/,'')+' …':shortNotes;
    const actions=document.createElement('div');actions.className='case-actions';
    const open=document.createElement('button');open.textContent=record.deletedAt?'Restore':'Open';
    open.onclick=async()=>{
@@ -340,6 +434,11 @@ async function loadCases(){
     finally{open.disabled=false}
    };
    actions.append(open);
+   if(!record.deletedAt&&typeof openCaseInResponse==='function'){
+    const respond=document.createElement('button');respond.textContent='Response';
+    respond.onclick=()=>openCaseInResponse(record.caseId);
+    actions.append(respond);
+   }
    if(!record.deletedAt){
     const remove=document.createElement('button');remove.textContent='Move to trash';
     remove.onclick=async()=>{
@@ -349,8 +448,9 @@ async function loadCases(){
      remove.disabled=true;
      try{
       await caseRequest(`/${encodeURIComponent(record.caseId)}`,'DELETE',{revision:record.revision});
-      if(currentCase?.caseId===record.caseId){currentCase=null;caseDirty=false;document.getElementById('fields').replaceChildren();document.getElementById('toResponse').disabled=true;document.getElementById('saveStatus').textContent='Case moved to trash.';}
+      if(currentCase?.caseId===record.caseId){currentCase=null;caseDirty=false;document.getElementById('fields').replaceChildren();document.getElementById('toResponse').disabled=true;document.getElementById('toAnalysis').disabled=true;document.getElementById('saveStatus').textContent='Case moved to trash.';}
       await loadCases();
+      if(typeof onCaseSaved==='function')onCaseSaved(null);
      }catch(error){status.textContent=error.message}
      finally{remove.disabled=false}
     };
