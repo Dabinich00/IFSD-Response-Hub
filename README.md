@@ -110,7 +110,6 @@ See [`PROJECT_BRIEF.md`](PROJECT_BRIEF.md) for the product context and [`BACKLOG
 - `requirements.txt` – optional speech-to-text dependency
 - `PROJECT_BRIEF.md` – challenge and product concept
 - `BACKLOG.md` – prioritized product backlog
-- `AGENTS.md` – contribution and safety guidance
 
 ## Safety principles
 
