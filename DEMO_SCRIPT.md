@@ -1,4 +1,4 @@
-# Demo-Szenario & Präsentations-Skript (v0.3)
+# Demo-Szenario & Präsentations-Skript (v0.4)
 
 Ein durchgängiges Szenario, das **alle Funktionen des Prototyps von A bis Z** zeigt und
 gleichzeitig als Funktionstest dient. Dauer: ca. 5–6 Minuten.
@@ -21,8 +21,8 @@ python3 server.py
 
 Dann `http://127.0.0.1:8000` öffnen. Prüfen:
 - Overview zeigt **Active cases ≈ 50** und Marker auf der Karte.
-- Die Karte braucht Internet (Leaflet + OpenStreetMap). Ohne Internet erscheint ein Hinweis,
-  alle anderen Funktionen laufen weiter.
+- Die Karte läuft auch offline (gebündelte Weltkarte). Mit Internet erscheinen OpenStreetMap-Kacheln.
+- Optional Ollama starten (`ollama pull llama3.2`), dann zeigt der Intake *Local AI ready*.
 - Live-Transkription ist optional: der Intake-Text ist vorausgefüllt.
 
 **Reset zwischen zwei Durchläufen:** Seite neu laden. Den in Akt 2 angelegten Case kann man
@@ -61,6 +61,17 @@ Der Text ist im Intake **bereits vorausgefüllt** (Datum = heute/morgen).
 | Auf *Missing Information & Alerts* zeigen | „Lücken sind sofort sichtbar." | Hinweise + „Human review required" |
 | Ein Feld ändern | „Der Experte behält die Kontrolle — alles editierbar." | — |
 | **Save Case** | „Gespeichert in der lokalen Datenbank, ID wird vergeben." | *Saved IFSD-…* |
+
+### Akt 1b · Anruf ohne Struktur — lokale KI (≈ 45 Sek, wenn Ollama läuft)
+| Aktion | Was man sagt | Erwartetes Ergebnis |
+|---|---|---|
+| Tab **Phone / Speech-to-Text**, folgenden Text einfügen (oder einsprechen) | „Ein echter Anruf hat keine Formularfelder." | — |
+| **Create case automatically** | „Eine lokale KI strukturiert den Anruf — nichts verlässt den Rechner. Erfundene IDs werden verworfen." | Status *Extracted with local AI*, Felder gefüllt, Priorität **1** mit Begründung *flameout reported* |
+| Priorität auf 3 ändern | „Der Mensch kann überstimmen — beides bleibt sichtbar." | *Reviewer set 3 - Medium* neben dem Systemvorschlag |
+
+```
+Hello, this is the duty engineer from Demo Baltic Wings. Aircraft DEMO-AC-009, engine 1 serial DEMO-ENG-00017, flamed out during cruise this morning around 07:15 UTC, relight was not successful and they diverted to Copenhagen. We would like the aircraft back in service tomorrow.
+```
 
 ### Akt 2 · Response — Analyse & Ressourcen (≈ 90 Sek)
 **„Analysis & resources →"** klicken.
@@ -109,7 +120,8 @@ derselbe Case ist über **alle Screens** konsistent sichtbar.
 
 ## Fallback, falls etwas klemmt
 
-- **Karte fehlt:** kein Internet → Hinweis statt Karte; Analyse, Ressourcen und Entscheidung funktionieren trotzdem. Screenshots als Plan B bereithalten.
+- **Kein Internet:** Karte wechselt automatisch auf die Offline-Weltkarte.
+- **„Rule-based extraction (local AI not available)“:** Ollama läuft nicht → Ollama-App starten; die Demo funktioniert auch ohne.
 - **Overview leer:** `python3 seed_demo_cases.py` ausführen und Seite neu laden.
 - **„Start python server.py …":** Seite wurde per Doppelklick (`file://`) geöffnet → über `http://127.0.0.1:8000` öffnen.
 - **Transkription „nicht erreichbar":** vorausgefüllten Text nutzen.

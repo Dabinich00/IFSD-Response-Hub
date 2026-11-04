@@ -94,12 +94,52 @@ async function transcribeRecording(stream){
  finally{startRecordingButton.disabled=false;mediaRecorder=null;audioChunks=[];}
 }
 
-document.getElementById('extract').onclick=()=>{
+// Local AI extraction (Ollama via server.py) with the rule-based extractor as fallback.
+let extractionInfo={method:'rules',detail:''};
+async function aiExtract(text){
+ if(location.protocol==='file:')throw new Error('server not running');
+ const response=await fetch('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({text}),signal:AbortSignal.timeout(150000)});
+ const result=await response.json();
+ if(!response.ok)throw new Error(result.error||'AI extraction failed');
+ return result;
+}
+function setExtractStatus(message,state='idle'){
+ const el=document.getElementById('extractStatus');if(!el)return;
+ el.textContent=message;el.dataset.state=state;el.hidden=!message;
+}
+async function refreshAiStatus(){
+ if(location.protocol==='file:'){setExtractStatus('Rule-based extraction (start server.py for local AI)');return}
+ try{
+  const s=await(await fetch('/api/extract/status',{cache:'no-store',signal:AbortSignal.timeout(5000)})).json();
+  setExtractStatus(s.available?`Local AI ready · ${s.model}`:'Rule-based extraction · local AI (Ollama) not running',s.available?'success':'idle');
+ }catch{setExtractStatus('Rule-based extraction','idle')}
+}
+refreshAiStatus();
+
+document.getElementById('extract').onclick=async()=>{
  if(caseSaving||!canReplaceCase())return;
  const sourceText=document.getElementById('sourceText').value.trim();
  if(!sourceText){document.getElementById('saveStatus').textContent='Enter a message first.';return;}
  const activeTab=document.querySelector('.tabs button.active')?.textContent||'E-Mail / Text';
+ const button=document.getElementById('extract');
  const data=extractCase(sourceText,activeTab);
+ button.disabled=true;setExtractStatus('Extracting with local AI …','working');
+ try{
+  const ai=await aiExtract(sourceText);
+  let used=0;
+  for(const [key,value] of Object.entries(ai.fields||{}))if(value){data[key]=value;used++}
+  extractionInfo={method:'ai',detail:ai.model};
+  setExtractStatus(`Extracted with local AI · ${ai.model} · ${used} field(s) · verify before saving`,'success');
+ }catch(error){
+  extractionInfo={method:'rules',detail:error.message};
+  setExtractStatus('Rule-based extraction (local AI not available)','idle');
+ }finally{button.disabled=false}
+ data.originalText=sourceText;
+ const suggestion=suggestPriority(data);
+ data.priority=suggestion.priority;
+ data.assistantSuggestions=priorityNote(suggestion)+(extractionInfo.method==='ai'?`\nFields extracted with local AI (${extractionInfo.detail}); verify against the original message.`:'');
+ priorityManual=false;
  currentCase=data;
  currentCase.originalText=sourceText;
  caseDirty=true;
@@ -133,6 +173,49 @@ function extractCase(text,activeTab){
   priority:calculatePriority(requestedDepartureDate)
  };
 }
+
+/* ---------- Explainable priority suggestion ----------
+   Combines engineering severity (from the report) with turnaround pressure
+   (requested departure). The more urgent of the two wins. It is a suggestion:
+   the reviewer can change the Priority field, which is then kept. */
+let priorityManual=false;
+const PRIORITY_NAMES=['Pending','1 - Most urgent','2 - Urgent','3 - Medium','4 - Low','5 - Lowest'];
+const SEVERITY_RULES=[
+ [/fire warning|engine fire|\bfire\b|feuer|brand/i,1,'fire warning reported'],
+ [/flamed? ?-?out|loss of combustion/i,1,'flameout reported'],
+ [/shut ?down|shut the engine down|abgeschaltet|\bIFSD\b/i,1,'in-flight shutdown reported'],
+ [/surge|\bbangs?\b/i,2,'suspected compressor surge'],
+ [/bird/i,2,'bird strike reported'],
+ [/thrust loss|lost thrust|loss of thrust|rollback/i,2,'thrust loss reported'],
+ [/oil[- ]pressure|vibrat|\bEGT\b|smoke|odou?r/i,3,'abnormal engine indication'],
+];
+// True if a sentence mentions the term without negating it ("no shutdown occurred").
+function mentionsText(text,re){
+ return String(text||'').split(/(?<=[.!?;])\s+|\n+/).some(s=>{
+  const hit=s.match(re);if(!hit)return false;
+  return !/\b(no|not|without|kein(e|en)?|nicht)\b[^,]{0,40}$/i.test(s.slice(0,hit.index));
+ });
+}
+function suggestPriority(data){
+ const text=`${data.problemNotes||''}\n${data.originalText||''}`;
+ const reasons=[];let level=6;
+ const rule=SEVERITY_RULES.find(([re])=>mentionsText(text,re));
+ if(rule){
+  let sev=rule[1];
+  const onGround=/ground run|ground (check|test|inspection)|after landing|during taxi|on the ground/i.test(text)&&!/in flight|in-flight|cruise|climb|descent|takeoff|take-off|approach/i.test(text);
+  if(onGround&&sev<3){sev=3;reasons.push(`severity ${sev}: ${rule[2]}, but on the ground`)}
+  else reasons.push(`severity ${sev}: ${rule[2]}`);
+  level=Math.min(level,sev);
+ }
+ const turnaround=calculatePriority(data.requestedDepartureDate);
+ if(/^[1-5]/.test(turnaround)){
+  const t=Number(turnaround[0]);level=Math.min(level,t);
+  const days=Math.round((new Date(`${data.requestedDepartureDate.match(/\d{4}-\d{2}-\d{2}/)[0]}T00:00:00`)-new Date().setHours(0,0,0,0))/86400000);
+  reasons.push(`turnaround ${t}: departure requested ${days<0?`${-days} day(s) ago`:days===0?'today':`in ${days} day(s)`}`);
+ }else reasons.push('no requested departure date');
+ return {priority:level<6?PRIORITY_NAMES[level]:'Pending',reasons};
+}
+function priorityNote(s){return `Priority suggestion: ${s.priority} — ${s.reasons.join('; ')}. Review and adjust if needed.`}
 
 function extractRequestedDeparture(text){
  return mDate(/\b(?:depart(?:ure)? again|next departure|requested departure|ready for departure|return to service)\D{0,40}(\d{4}-\d{2}-\d{2}(?:\s+at\s+\d{1,2}:\d{2}\s*UTC)?)\b/i,text)
@@ -192,8 +275,9 @@ function renderCase(data){
   input.oninput=()=>{
    caseDirty=true;
    currentCase[input.dataset.caseField]=input.value;
-   if(input.dataset.caseField==='requestedDepartureDate'){
-    currentCase.priority=calculatePriority(input.value);
+   if(input.dataset.caseField==='priority')priorityManual=true;
+   if(['requestedDepartureDate','problemNotes'].includes(input.dataset.caseField)&&!priorityManual){
+    currentCase.priority=suggestPriority(currentCase).priority;
     document.querySelector('[data-case-field="priority"]').value=currentCase.priority;
    }
    renderAlerts(currentCase,document.getElementById('originalText').value);
@@ -218,10 +302,12 @@ function renderAlerts(data){
  fields.filter(field=>field.required||field.expected).forEach(field=>{
   if(!data[field.key]||data[field.key]==='Pending')alerts.push(`${field.label} missing`);
  });
- if(!data.requestedDepartureDate)alerts.push('Requested departure date missing - priority cannot be calculated');
+ const suggestion=suggestPriority(data);
+ const why=`<div class="priority-why"><b>Suggested priority: ${escapeHtml(suggestion.priority)}</b><span>${suggestion.reasons.map(escapeHtml).join(' · ')}</span>${data.priority&&data.priority!==suggestion.priority?`<em>Reviewer set ${escapeHtml(data.priority)}</em>`:''}</div>`;
+ if(!data.requestedDepartureDate)alerts.push('Requested departure date missing - turnaround urgency cannot be calculated');
  alerts.push('Human review required before case submission');
  alerts.push('Saving requires Source and Problem / Notes. Other missing details can be added later.');
- document.getElementById('missing').innerHTML=alerts.map(alert=>`<div class="miss">⚠ ${escapeHtml(alert)}</div>`).join('');
+ document.getElementById('missing').innerHTML=why+alerts.map(alert=>`<div class="miss">⚠ ${escapeHtml(alert)}</div>`).join('');
 }
 
 function syncDashboard(data,sourceText){
@@ -273,7 +359,7 @@ async function caseRequest(path='',method='GET',payload){
 }
 
 function openCase(data){
- currentCase=data;caseDirty=false;
+ currentCase=data;caseDirty=false;priorityManual=true; // keep the saved priority
  renderCase(data);renderAlerts(data);
  document.getElementById('originalText').value=data.originalText||'';
  document.getElementById('sourceText').value=data.originalText||'';
@@ -289,7 +375,7 @@ document.getElementById('newCase').onclick=()=>{
  if(caseSaving||!canReplaceCase())return;
  const blank=Object.fromEntries(fields.map(field=>[field.key,'']));
  openCase({...blank,source:'Email',priority:'Pending',originalText:''});
- caseDirty=true;
+ caseDirty=true;priorityManual=false;
 };
 
 document.getElementById('toResponse').onclick=async()=>{

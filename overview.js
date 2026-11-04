@@ -53,7 +53,7 @@ const SYMPTOMS = [
  {key:'fuel', label:'Fuel system', re:/fuel|kraftstoff|treibstoff/i, action:'Fuel system check', parts:['Fuel metering unit','Fuel filter']},
  {key:'indication', label:'Indication / sensor', re:/indication|sensor|display/i, action:'Sensor & indication troubleshooting', parts:['EGT sensor','Harness kit']},
  {key:'smoke', label:'Smoke / odour / fire warning', re:/smoke|odou?r|smell|fire|rauch|feuer/i, action:'Contamination & fire-zone inspection', parts:['Bearing seal kit','Fire detector element']},
- {key:'flameout', label:'Flameout / relight', re:/flame ?out|relight|restart|loss of combustion/i, action:'Combustion & ignition check', parts:['Igniter plug set','Fuel nozzle']}
+ {key:'flameout', label:'Flameout / relight', re:/flamed? ?-?out|relight|restart|loss of combustion/i, action:'Combustion & ignition check', parts:['Igniter plug set','Fuel nozzle']}
 ];
 const EHM_SIGNALS = [['EGT',/\bEGT\b|exhaust gas temp/i],['Vibration',/vibrat/i],['Oil pressure',/oil[- ]pressure|öldruck/i],['Oil quantity',/oil (?:quantity|loss|leak|top-up|consumption)|ölstand/i],['Fuel flow',/fuel[- ]flow/i]];
 const PRIORITY_COLORS = {0:'#9aa9b1',1:'#f0525b',2:'#f3cf3b',3:'#57d779',4:'#58bdc7',5:'#58bdc7'};
@@ -78,14 +78,7 @@ function airport(code){const [name,lat,lng]=AIRPORTS[code];return {iata:code,nam
 function priorityLevel(p){return Number((String(p||'').match(/^([1-5])/)||[])[1]||0)}
 // A term counts only in a sentence that does not negate it ("no shutdown occurred",
 // "with no reported oil-pressure change", "not an in-flight shutdown").
-function mentions(c,re){
- const sentences=`${c.problemNotes||''}. ${c.originalText||''}`.split(/(?<=[.!?;])\s+|\n+/);
- return sentences.some(s=>{
-  const hit=s.match(re);if(!hit)return false;
-  const before=s.slice(0,hit.index);
-  return !/\b(no|not|without|kein(e|en)?|nicht)\b[^,]{0,40}$/i.test(before);
- });
-}
+function mentions(c,re){return mentionsText(`${c.problemNotes||''}.\n${c.originalText||''}`,re)} // mentionsText: app.js
 function symptomsOf(c){return SYMPTOMS.filter(s=>mentions(c,s.re))}
 function isShutdown(c){return mentions(c,/shut ?down|shut the engine down|abgeschaltet|\bIFSD\b/i)}
 function km(a,b){
@@ -137,9 +130,31 @@ function similarCases(c){
 }
 
 /* ---------- Leaflet helpers ---------- */
+// Online: OpenStreetMap tiles. Offline (tiles fail to load): bundled Natural Earth land outlines.
+let landData=null;
+async function landGeoJson(){
+ if(!landData)landData=fetch('vendor/world-land-110m.geojson').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()});
+ return landData;
+}
 function baseMap(id,view,zoom){
  const map=L.map(id,{worldCopyJump:true,minZoom:1}).setView(view,zoom);
- L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:12}).addTo(map);
+ const tiles=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:12}).addTo(map);
+ let offline=false;
+ const goOffline=async()=>{
+  if(offline)return;offline=true;
+  map.removeLayer(tiles);
+  map.getContainer().classList.add('offline-map');
+  try{
+   const land=await landGeoJson();
+   L.geoJSON(land,{interactive:false,style:{color:'#9fb7ad',weight:1,fillColor:'#eef1e9',fillOpacity:1}}).addTo(map).bringToBack();
+   map.attributionControl.addAttribution('Offline map · Natural Earth');
+  }catch{map.attributionControl.addAttribution('Offline – map background unavailable')}
+ };
+ let errors=0,loaded=0;
+ tiles.on('tileload',()=>loaded++);
+ tiles.on('tileerror',()=>{if(++errors>=3&&loaded===0)goOffline()});
+ if(navigator.onLine===false)goOffline();
+ window.addEventListener('offline',goOffline);
  return map;
 }
 function shapeIcon(kind){return L.divIcon({className:'',iconSize:[16,16],iconAnchor:[8,8],html:`<i class="mk mk-${kind}"></i>`})}
@@ -266,13 +281,16 @@ function renderResponse(){
  const c=currentCase;
  const title=document.getElementById('respTitle'), meta=document.getElementById('respMeta'), pr=document.getElementById('respPriority');
  document.getElementById('decisionPanel').hidden=!c;
- if(!c){title.textContent='No case selected';meta.textContent='Create a case in Intake or pick a marker on the Overview map.';pr.textContent='–';return}
+ if(!c){document.getElementById('respPriorityWhy').textContent='';title.textContent='No case selected';meta.textContent='Create a case in Intake or pick a marker on the Overview map.';pr.textContent='–';return}
  const loc=locate(c.aircraftLocation), level=priorityLevel(c.priority), symptoms=symptomsOf(c), missing=missingFieldsOf(c), res=resourcesFor(c);
  title.textContent=`${c.caseId||'Unsaved case'} · ${c.customer||'Customer open'}`;
  meta.textContent=[c.aircraftId||'Aircraft open',[c.engine1,c.engine2].filter(Boolean).join(' / ')||'Engine numbers open',
   loc?`on ground at ${loc.name} (${loc.iata})`:(c.aircraftLocation||'location open'),c.eventTime||'event time open'].join(' · ');
  pr.textContent=c.priority&&c.priority!=='Pending'?`Priority ${c.priority}`:'Priority pending';
  pr.style.background=PRIORITY_COLORS[level];pr.style.color=level===2?'#3a2f00':'#fff';
+ const suggestion=suggestPriority(c); // app.js
+ document.getElementById('respPriorityWhy').textContent=`System suggestion: ${suggestion.priority} — ${suggestion.reasons.join(' · ')}`+
+  (c.priority&&c.priority!==suggestion.priority?` · recorded priority differs: ${c.priority}`:'');
 
  document.getElementById('respEhm').innerHTML=EHM_SIGNALS.map(([name,re])=>mentions(c,re)
   ?`<p>${name} <span class="red">reported abnormal</span></p>`:`<p>${name} <span class="muted">no report</span></p>`).join('')+

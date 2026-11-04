@@ -11,6 +11,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 import sqlite3
 import database
+import extraction
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -62,10 +63,34 @@ class IFSDHandler(SimpleHTTPRequestHandler):
     def send_head(self):
         # Serve only public assets; never expose the database, source or Git files.
         path = urlparse(self.path).path
-        if path not in ('/', '/index.html', '/app.js', '/overview.js', '/styles.css'):
+        if path not in ('/', '/index.html', '/app.js', '/overview.js', '/styles.css') and not self.is_vendor_asset(path):
             self.send_error(HTTPStatus.NOT_FOUND)
             return None
         return super().send_head()
+
+    @staticmethod
+    def is_vendor_asset(path):
+        # Bundled third-party assets (Leaflet, offline world map) so the demo works without internet.
+        if not path.startswith('/vendor/') or '..' in path or '%' in path or '\\' in path:
+            return False
+        vendor = (Path(__file__).resolve().parent / 'vendor').resolve()
+        target = (vendor / path[len('/vendor/'):]).resolve()
+        return (target.is_file() and vendor in target.parents
+                and target.suffix in ('.js', '.css', '.png', '.json', '.geojson'))
+
+    def extract_api(self):
+        try:
+            length = int(self.headers.get('Content-Length', '0'))
+            if not 0 < length <= 256 * 1024:
+                raise ValueError('Invalid request size.')
+            payload = json.loads(self.rfile.read(length))
+            if not isinstance(payload, dict) or not isinstance(payload.get('text'), str):
+                raise ValueError('Expected {"text": "..."}.')
+            self.send_json(extraction.extract(payload['text']))
+        except (ValueError, UnicodeError) as error:
+            self.send_json({'error': str(error)}, HTTPStatus.BAD_REQUEST)
+        except extraction.ExtractionUnavailable as error:
+            self.send_json({'error': str(error)}, HTTPStatus.SERVICE_UNAVAILABLE)
 
     def case_api(self):
         parsed = urlparse(self.path)
@@ -135,6 +160,9 @@ class IFSDHandler(SimpleHTTPRequestHandler):
         if path == '/api/cases' or path.startswith('/api/cases/'):
             self.case_api()
             return
+        if path == '/api/extract/status':
+            self.send_json(extraction.status())
+            return
         if path.startswith("/api/transcriptions/"):
             with _jobs_lock:
                 job = _jobs.get(path.rsplit("/", 1)[-1])
@@ -150,6 +178,9 @@ class IFSDHandler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == '/api/cases' or parsed.path.startswith('/api/cases/'):
             self.case_api()
+            return
+        if parsed.path == '/api/extract':
+            self.extract_api()
             return
         if parsed.path != "/api/transcribe":
             self.send_json({"error": "Endpoint nicht gefunden"}, HTTPStatus.NOT_FOUND)

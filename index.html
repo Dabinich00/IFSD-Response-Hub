@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IFSD Response Hub</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<script src="vendor/leaflet/leaflet.js"></script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header><h1>IFSD Response Hub</h1><p>Team 3 – In-Flight Shutdown · Prototype v0.3</p></header>
+<header><h1>IFSD Response Hub</h1><p>Team 3 – In-Flight Shutdown · Prototype v0.4</p></header>
 <nav>
 <button data-view="overview" class="active">Overview</button>
 <button data-view="dashboard">Incident Dashboard</button>
@@ -126,10 +126,10 @@
 
 <section id="intake" class="view">
   <h2>1 · Intelligent Incident Intake</h2>
-  <p>Telefon und E-Mail werden in dieselbe strukturierte Case-Logik überführt.</p>
+  <p>Phone calls and emails are turned into the same structured case.</p>
   <div class="two">
     <article id="intakeInput">
-      <div class="tabs"><button>E-Mail / Text</button><button>Telefon / Speech-to-Text</button></div>
+      <div class="tabs"><button>Email / Text</button><button>Phone / Speech-to-Text</button></div>
       <section class="recorder" aria-labelledby="recorderTitle">
         <div class="recorder-heading">
           <div><small>Local AI transcription</small><strong id="recorderTitle">faster-whisper</strong></div>
@@ -160,7 +160,7 @@ Engine 2 Number: DEMO-ENG-01734
 During flight DNA412 the crew reported an engine shutdown on {{TODAY}} at 09:42 UTC. Engine 2 was shut down after increased vibration and EGT rise. The aircraft diverted to Shannon and is currently on ground there.
 
 The customer requests the aircraft to depart again on {{TOMORROW}} at 08:00 UTC. Oil system details and the complete EHM dataset are not available yet.</textarea>
-      <button id="extract">Create case automatically</button>
+      <div class="extract-row"><button id="extract">Create case automatically</button><span id="extractStatus" class="recorder-status" data-state="idle" hidden></span></div>
     </article>
     <article id="intakeResult">
       <h3>Structured Case</h3>
@@ -182,7 +182,7 @@ The customer requests the aircraft to depart again on {{TOMORROW}} at 08:00 UTC.
 
 <section id="response" class="view">
   <div class="response-head">
-    <div><span class="eyebrow">2 · Incident Response &amp; Resource Intelligence</span><h2 id="respTitle">No case selected</h2><p id="respMeta" class="resp-meta">Create a case in Intake or pick a marker on the Overview map.</p></div>
+    <div><span class="eyebrow">2 · Incident Response &amp; Resource Intelligence</span><h2 id="respTitle">No case selected</h2><p id="respMeta" class="resp-meta">Create a case in Intake or pick a marker on the Overview map.</p><p id="respPriorityWhy" class="resp-meta resp-why"></p></div>
     <span class="resp-priority" id="respPriority">–</span>
   </div>
   <div class="cards three">

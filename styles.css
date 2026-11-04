@@ -213,3 +213,11 @@ main{max-width:1120px;padding:26px 22px 42px}
 @media(max-width:620px){.overview-head{align-items:flex-start;flex-direction:column;padding:17px}.world-map{height:390px;border-radius:15px}.map-legend{grid-template-columns:1fr 1fr}.overview-bottom{grid-template-columns:1fr}.overview-card{min-height:auto}}
 nav button{white-space:nowrap;flex-shrink:0}
 nav{overflow-x:auto}
+/* v0.4: offline map, AI extraction status, priority explanation */
+.offline-map{background:#a9d5df!important}
+.extract-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.priority-why{margin:6px 0;padding:9px 11px;border:1px solid #b7e4e2;border-radius:8px;background:var(--cyan-soft);color:#0b4f4c;font-size:13px}
+.priority-why b{display:block;margin-bottom:2px}
+.priority-why span{display:block}
+.priority-why em{display:block;margin-top:3px;color:#806015;font-style:normal;font-weight:700}
+.resp-why{font-size:12px;color:#9fd8d5}
