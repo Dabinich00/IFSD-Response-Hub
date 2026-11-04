@@ -243,7 +243,7 @@ async function loadOverview(){
 
 /* ---------- Opening cases from map / list ---------- */
 async function openCaseIn(view,caseId){
- if(caseSaving||(caseDirty&&currentCase?.caseId!==caseId&&!window.confirm('Discard unsaved changes to the current case?')))return;
+ if(extractionBusy||caseSaving||(caseDirty&&currentCase?.caseId!==caseId&&!window.confirm('Discard unsaved changes to the current case?')))return;
  try{
   const data=await caseRequest(`/${encodeURIComponent(caseId)}`);
   openCase(data);         // fills intake + dashboard (from app.js)

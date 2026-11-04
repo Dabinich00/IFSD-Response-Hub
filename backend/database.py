@@ -4,8 +4,9 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from .date_fields import normalize_date
 
-DB_PATH = Path(__file__).resolve().parent / 'data' / 'incidents.db'
+DB_PATH = Path(__file__).resolve().parent.parent / 'data' / 'incidents.db'
 FIELDS = ('source', 'customer', 'aircraftId', 'aircraftLocation', 'priority',
           'eventTime', 'requestedDepartureDate', 'engine1', 'engine2',
           'problemNotes', 'assistantSuggestions', 'originalText')
@@ -95,6 +96,11 @@ def validate(payload):
         raise ValueError('Invalid expert decision.')
     if result['decision'] and not result['decisionBy']:
         raise ValueError('An expert decision requires the name of the deciding expert.')
+    for field in ('eventTime', 'requestedDepartureDate'):
+        try:
+            result[field] = normalize_date(result[field])
+        except ValueError as error:
+            raise ValueError(f'{field}: enter a valid date as DD.MM.YYYY, or leave it empty.') from error
     return result
 
 def history(db, row, action):

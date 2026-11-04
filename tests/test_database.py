@@ -7,7 +7,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 from unittest.mock import patch
-import database
+from backend import database
 import server
 
 class DatabaseTests(unittest.TestCase):
@@ -140,10 +140,13 @@ class APITests(DatabaseTests):
         self.assertEqual(self.request('/api/cases/does-not-exist')[0], 404)
 
     def test_private_files_and_head_are_not_served(self):
-        for path in ('/data/incidents.db', '/data/incidents.db-journal', '/database.py', '/.git/config', '/%64ata/incidents.db', '/../server.py'):
+        for path in ('/data/incidents.db', '/data/incidents.db-journal', '/backend/database.py',
+                     '/backend/extraction.py', '/web/index.html', '/.git/config',
+                     '/%64ata/incidents.db', '/../server.py'):
             for method in ('GET', 'HEAD'):
                 self.assertEqual(self.request(path, method)[0], 404, path)
-        self.assertEqual(self.request('/')[0], 200)
+        for path in ('/', '/index.html', '/app.js', '/styles.css'):
+            self.assertEqual(self.request(path)[0], 200, path)
 
 if __name__ == '__main__':
     unittest.main()

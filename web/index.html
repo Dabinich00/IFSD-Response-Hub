@@ -92,7 +92,8 @@ Engine 2 Number: DEMO-ENG-01734
 During flight DNA412 the crew reported an engine shutdown on {{TODAY}} at 09:42 UTC. Engine 2 was shut down after increased vibration and EGT rise. The aircraft diverted to Shannon and is currently on ground there.
 
 The customer requests the aircraft to depart again on {{TOMORROW}} at 08:00 UTC. Oil system details and the complete EHM dataset are not available yet.</textarea>
-      <div class="extract-row"><button id="extract" class="btn-primary">Create case</button><span id="extractStatus" class="status-chip" data-state="idle" hidden></span></div>
+      <div class="extract-row"><button id="extract" class="btn-primary">Create Case</button><button id="retryExtraction" class="btn-secondary" type="button" hidden>Try again</button></div>
+      <p id="extractionStatus" role="status" aria-live="polite"></p>
     </article>
     <article id="intakeResult" class="panel">
       <h2>Structured case</h2>
@@ -225,7 +226,7 @@ The customer requests the aircraft to depart again on {{TOMORROW}} at 08:00 UTC.
 
 <section id="cases" class="view">
   <header class="view-head">
-    <div><h1>Saved cases</h1><p>Open a case to review it, or go straight to the response workspace.</p></div>
+    <div><h1>Saved cases</h1><p>Select Edit to review a case, or go straight to the response workspace.</p></div>
   </header>
   <div class="case-controls panel">
     <label>Search <input id="caseSearch" type="search" placeholder="Case ID, customer, aircraft, location or problem"></label>

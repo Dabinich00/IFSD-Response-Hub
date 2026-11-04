@@ -10,8 +10,8 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 import sqlite3
-import database
-import extraction
+import extraction as local_extraction
+from backend import database, extraction
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -19,6 +19,8 @@ from urllib.parse import parse_qs, urlparse
 
 HOST = "127.0.0.1"
 PORT = int(os.environ.get("IFSD_PORT", "8000"))
+ROOT_DIR = Path(__file__).resolve().parent
+WEB_DIR = ROOT_DIR / "web"
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
 MODEL_NAME = os.environ.get("WHISPER_MODEL", "base")
 _model = None
@@ -64,6 +66,15 @@ def get_model():
 class IFSDHandler(SimpleHTTPRequestHandler):
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, '.woff2': 'font/woff2', '.geojson': 'application/geo+json'}
 
+    def __init__(self, request, client_address, server):
+        super().__init__(request, client_address, server, directory=str(ROOT_DIR))
+
+    def translate_path(self, path):
+        name = urlparse(path).path.lstrip('/') or 'index.html'
+        if name in ('index.html', 'app.js', 'overview.js', 'styles.css'):
+            return str(WEB_DIR / name)
+        return super().translate_path(path)
+
     def send_head(self):
         # Serve only public assets; never expose the database, source or Git files.
         path = urlparse(self.path).path
@@ -90,10 +101,10 @@ class IFSDHandler(SimpleHTTPRequestHandler):
             payload = json.loads(self.rfile.read(length))
             if not isinstance(payload, dict) or not isinstance(payload.get('text'), str):
                 raise ValueError('Expected {"text": "..."}.')
-            self.send_json(extraction.extract(payload['text']))
+            self.send_json(local_extraction.extract(payload['text']))
         except (ValueError, UnicodeError) as error:
             self.send_json({'error': str(error)}, HTTPStatus.BAD_REQUEST)
-        except extraction.ExtractionUnavailable as error:
+        except local_extraction.ExtractionUnavailable as error:
             self.send_json({'error': str(error)}, HTTPStatus.SERVICE_UNAVAILABLE)
 
     def case_api(self):
@@ -161,11 +172,17 @@ class IFSDHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+        if path.startswith('/api/extractions/'):
+            try:
+                self.send_json(extraction.get(path.rsplit('/', 1)[-1]))
+            except KeyError:
+                self.send_json({'error': 'Analysis not found.'}, HTTPStatus.NOT_FOUND)
+            return
         if path == '/api/cases' or path.startswith('/api/cases/'):
             self.case_api()
             return
         if path == '/api/extract/status':
-            self.send_json(extraction.status())
+            self.send_json(local_extraction.status())
             return
         if path.startswith("/api/transcriptions/"):
             with _jobs_lock:
@@ -180,6 +197,25 @@ class IFSDHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path == '/api/extractions':
+            try:
+                if self.headers.get('Content-Type', '').split(';')[0] != 'application/json':
+                    raise ValueError('Expected application/json.')
+                origin = self.headers.get('Origin')
+                if origin and origin != 'http://' + self.headers.get('Host', ''):
+                    raise ValueError('Use the local application page for analysis.')
+                length = int(self.headers.get('Content-Length', '0'))
+                if not 0 < length <= 100000:
+                    raise ValueError('Message too large or missing.')
+                payload = json.loads(self.rfile.read(length))
+                if not isinstance(payload, dict) or type(payload.get('retry', False)) is not bool:
+                    raise ValueError('Invalid analysis request.')
+                self.send_json(extraction.submit(payload.get('text'), payload.get('retry', False)), HTTPStatus.ACCEPTED)
+            except (ValueError, UnicodeError) as error:
+                self.send_json({'error': str(error)}, HTTPStatus.BAD_REQUEST)
+            except RuntimeError as error:
+                self.send_json({'error': str(error)}, HTTPStatus.CONFLICT)
+            return
         if parsed.path == '/api/cases' or parsed.path.startswith('/api/cases/'):
             self.case_api()
             return
@@ -237,8 +273,9 @@ class IFSDHandler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    os.chdir(Path(__file__).resolve().parent)
+    os.chdir(ROOT_DIR)
     database.initialize()
+    extraction.initialize()
     print(f"IFSD Response Hub: http://{HOST}:{PORT}")
     print(f"Whisper model: {MODEL_NAME} (first use downloads the model)")
     ThreadingHTTPServer((HOST, PORT), IFSDHandler).serve_forever()

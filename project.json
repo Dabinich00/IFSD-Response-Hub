@@ -7,6 +7,6 @@
     "Incident Response & Resource Intelligence"
   ],
   "entrypoint": "server.py",
-  "fallback_entrypoint": "index.html",
+  "fallback_entrypoint": "web/index.html",
   "speech_to_text": "faster-whisper (optional local service)"
 }

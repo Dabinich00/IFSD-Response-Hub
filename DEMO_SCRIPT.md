@@ -11,18 +11,18 @@ gleichzeitig als Funktionstest dient. Dauer: ca. 5–6 Minuten.
 
 ## Vorbereitung (einmalig vor der Präsentation)
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate            # Windows: .\.venv\Scripts\activate
-pip install -r requirements.txt      # nur für Live-Transkription nötig
-python3 seed_demo_cases.py           # lädt 50 synthetische Demo-Cases (einmalig)
-python3 server.py
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m scripts.seed_demo_cases
+codex.cmd login
+.\.venv\Scripts\python.exe server.py
 ```
 
 Dann `http://127.0.0.1:8000` öffnen. Prüfen:
 - Overview zeigt **Active cases ≈ 50** und Marker auf der Karte.
 - Die Karte läuft auch offline (gebündelte Weltkarte). Mit Internet erscheinen OpenStreetMap-Kacheln.
-- Optional Ollama starten (`ollama pull llama3.2`), dann zeigt der Intake *Local AI ready*.
+- Vor der Demo mit dem eigenen Konto bei Codex CLI anmelden. Die Umwandlung von Text zu Cases nutzt Codex in der Cloud.
 - Live-Transkription ist optional: der Intake-Text ist vorausgefüllt.
 
 **Reset zwischen zwei Durchläufen:** Seite neu laden. Den in Akt 2 angelegten Case kann man
@@ -58,20 +58,23 @@ In der linken Leiste **Incident intake** klicken.
 |---|---|---|
 | Auf das Whisper-Widget zeigen | „Anrufe werden lokal per faster-whisper transkribiert." | Status *Ready* |
 | **Create case** | „Aus unstrukturiertem Text wird ein strukturierter Case." | Felder: Customer *Demo Northstar Air*, Aircraft *DEMO-AC-017*, Location *Shannon*, Engines, Event Time, Priority **1 - Most urgent** (aus gewünschtem Abflug) |
-| Auf *Missing Information & Alerts* zeigen | „Lücken sind sofort sichtbar." | Hinweise + „Human review required" |
+| Auf *Missing Information & Alerts* zeigen | „Lücken sind sofort sichtbar." | Fehlende Angaben und Begründung der Terminpriorität |
 | Ein Feld ändern | „Der Experte behält die Kontrolle — alles editierbar." | — |
 | **Save Case** | „Gespeichert in der lokalen Datenbank, ID wird vergeben." | *Saved IFSD-…* |
 
-### Akt 1b · Anruf ohne Struktur — lokale KI (≈ 45 Sek, wenn Ollama läuft)
-| Aktion | Was man sagt | Erwartetes Ergebnis |
-|---|---|---|
-| Tab **Phone / Speech-to-Text**, folgenden Text einfügen (oder einsprechen) | „Ein echter Anruf hat keine Formularfelder." | — |
-| **Create case** | „Eine lokale KI strukturiert den Anruf — nichts verlässt den Rechner. Erfundene IDs werden verworfen." | Status *Extracted with local AI*, Felder gefüllt, Priorität **1** mit Begründung *flameout reported* |
-| Priorität auf 3 ändern | „Der Mensch kann überstimmen — beides bleibt sichtbar." | *Reviewer set 3 - Medium* neben dem Systemvorschlag |
+### Akt 1b · Freier Anruftext mit Codex (ca. 45 Sek)
+
+Wähle **Phone / Speech-to-Text** und füge den Beispieltext unten ein (oder sprich ihn ein).
+**Create Case** sendet den Text einmal an Codex; das Ergebnis wird lokal zwischengespeichert.
+Prüfe Aircraft ID, Engine Number, Datum und Rückfragen vor dem Speichern. Die Priorität
+kommt allein aus dem gewünschten Abflugdatum und kann vom Menschen geändert werden.
 
 ```
 Hello, this is the duty engineer from Demo Baltic Wings. Aircraft DEMO-AC-009, engine 1 serial DEMO-ENG-00017, flamed out during cruise this morning around 07:15 UTC, relight was not successful and they diverted to Copenhagen. We would like the aircraft back in service tomorrow.
 ```
+
+Da "this morning" und "tomorrow" kein Bezugsdatum im Text haben, bleiben die betroffenen
+Datumsfelder leer; Codex soll nach dem konkreten Datum fragen.
 
 ### Akt 2 · Response — Analyse & Ressourcen (≈ 90 Sek)
 **Analyse & assign resources** klicken.
@@ -121,7 +124,7 @@ derselbe Case ist über **alle Screens** konsistent sichtbar.
 ## Fallback, falls etwas klemmt
 
 - **Kein Internet:** Karte wechselt automatisch auf die Offline-Weltkarte.
-- **„Rule-based extraction (local AI not available)“:** Ollama läuft nicht → Ollama-App starten; die Demo funktioniert auch ohne.
+- **Text processing unavailable:** Codex-CLI-Anmeldung, Internetverbindung und gewähltes Modell prüfen.
 - **Overview leer:** `python3 seed_demo_cases.py` ausführen und Seite neu laden.
 - **„Start python server.py …":** Seite wurde per Doppelklick (`file://`) geöffnet → über `http://127.0.0.1:8000` öffnen.
 - **Transkription „nicht erreichbar":** vorausgefüllten Text nutzen.
