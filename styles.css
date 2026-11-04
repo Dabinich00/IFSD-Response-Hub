@@ -343,3 +343,23 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--accent);
 .fc-prep small{display:block;margin-top:2px;color:var(--accent);font-size:13px}
 @media (max-width:1180px){.fc-grid{grid-template-columns:1fr 1fr}.fc-volume{grid-column:1/-1}}
 @media (max-width:620px){.fc-grid{grid-template-columns:1fr}.fc-table th:nth-child(3),.fc-table td:nth-child(3){display:none}}
+
+/* ---------- v0.8: EHM traces, history, accuracy ---------- */
+#respEhm p{align-items:center}
+#respEhm p>span:first-child{flex:0 0 96px}
+.spark{flex:1;height:28px;min-width:0}
+.spark .limit{stroke:var(--p1);stroke-width:.8;stroke-dasharray:3 3;opacity:.6}
+.spark .trace{fill:none;stroke:var(--ink-2);stroke-width:1.4}
+.spark .trace.bad{stroke:var(--p1)}
+#respEhm p>span:last-child{flex:0 0 84px;text-align:right}
+.history{margin-top:24px}
+.history-list{margin:0;padding:0;list-style:none}
+.history-list li{display:grid;grid-template-columns:170px 1fr;gap:2px 16px;padding:10px 0;border-bottom:1px solid var(--line-2);font-size:14px}
+.history-list time{grid-row:span 4;color:var(--muted);font-size:13px}
+.history-list b{font-weight:500}
+.history-list span{grid-column:2;color:var(--ink-2)}
+.eval{margin:16px 0 0}
+.eval summary{cursor:pointer;font-weight:500}
+.eval .btn-secondary{margin:4px 0 12px}
+.metar{font:400 12.5px/1.5 var(--mono)!important}
+@media (max-width:620px){.history-list li{grid-template-columns:1fr}.history-list time{grid-row:auto}}

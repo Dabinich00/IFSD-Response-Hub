@@ -1,4 +1,4 @@
-﻿import concurrent.futures
+import concurrent.futures
 import json
 import tempfile
 import threading
@@ -98,6 +98,15 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(old['decision'], '')
         with database.connection() as db:
             self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], database.SCHEMA_VERSION)
+
+    def test_history_lists_changes_oldest_first(self):
+        row = database.create(self.payload)
+        database.change(row['caseId'], {**row, 'priority': '1 - Most urgent'})
+        hist = database.history_for(row['caseId'])
+        self.assertEqual([h['action'] for h in hist], ['created', 'updated'])
+        self.assertEqual(hist[1]['fields']['priority'], '1 - Most urgent')
+        with self.assertRaises(KeyError):
+            database.history_for('missing')
 
 class APITests(DatabaseTests):
     def setUp(self):

@@ -1,12 +1,16 @@
-﻿"""Import 50 explicitly synthetic cases; reruns skip existing dataset markers."""
+"""Import 50 explicitly synthetic cases; reruns skip existing dataset markers.
+
+Use --reset to back up the database and start from an empty one first."""
 import json
+import random
+import sys
 import sqlite3
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import database
 
-DATASET = 'IFSD-DEMO-50-v1'
+DATASET = 'IFSD-DEMO-50-v2'
 CUSTOMERS = ['Demo Northstar Air', 'Demo Atlantic Connect', 'Demo Baltic Wings', 'Demo Alpine Airways', 'Demo Meridian Air']
 LOCATIONS = ['Shannon (SNN)', 'London Heathrow (LHR)', 'Frankfurt (FRA)', 'Berlin (BER)', 'Munich (MUC)', 'Madrid (MAD)', 'Lisbon (LIS)', 'Paris (CDG)', 'Amsterdam (AMS)', 'Copenhagen (CPH)']
 # Each family includes five distinct reports, not five copies of one incident.
@@ -84,59 +88,94 @@ FAMILIES = [
 ]
 
 
-def build_records():
+FLEET = [  # fictional tails; aircraft/engine type names are used only as realistic labels
+ ('DEMO-AC-001','A350-900','Trent XWB-84',0),('DEMO-AC-002','A350-900','Trent XWB-84',0),('DEMO-AC-003','A350-1000','Trent XWB-97',0),
+ ('DEMO-AC-004','787-9','Trent 1000-TEN',1),('DEMO-AC-005','787-9','Trent 1000-TEN',1),('DEMO-AC-006','787-10','Trent 1000-TEN',1),
+ ('DEMO-AC-007','A330-900','Trent 7000',2),('DEMO-AC-008','A330-900','Trent 7000',2),('DEMO-AC-009','A330-900','Trent 7000',2),
+ ('DEMO-AC-010','A350-900','Trent XWB-84',3),('DEMO-AC-011','A350-900','Trent XWB-84',3),('DEMO-AC-012','A380-800','Trent 900',3),
+ ('DEMO-AC-013','787-9','Trent 1000-TEN',4),('DEMO-AC-014','A330-900','Trent 7000',4),('DEMO-AC-015','A350-1000','Trent XWB-97',4)]
+# Realistic mix: indications and vibration are common, flameouts and surges rare.
+WEIGHTS = {'indication-disagreement':10,'vibration':8,'high-egt':6,'oil-consumption':6,'oil-pressure':5,'bird-strike':5,
+           'fuel-system':3,'smoke-odour':3,'compressor-surge':2,'flameout-restart':2}
+ATA = {'vibration':'77-30 Engine vibration indicating','oil-pressure':'79-30 Oil indicating','oil-consumption':'79-00 Oil system',
+       'high-egt':'77-20 EGT indicating','compressor-surge':'72-30 Compressor','bird-strike':'72-00 Engine (bird strike inspection)',
+       'fuel-system':'73-00 Engine fuel and control','indication-disagreement':'77-00 Engine indicating',
+       'smoke-odour':'26-10 Fire detection / 79 oil','flameout-restart':'74-00 Ignition'}
+LOC_WEIGHTS = [5,9,8,4,7,4,3,4,3,3]  # LHR and FRA hubs see the most events
+CLUSTERS = [('DEMO-AC-003','oil-consumption',[4,11,19]),('DEMO-AC-007','vibration',[6,23]),('DEMO-AC-012','smoke-odour',[2,9])]
+
+
+def phase_of(text):
+    t = text.lower()
+    for key, label in (('ground run','Ground run'),('taxi','Taxi'),('after landing','Ground'),('ground','Ground'),('takeoff','Take-off'),
+                       ('climb','Climb'),('cruise','Cruise'),('descent','Descent'),('approach','Approach')):
+        if key in t:
+            return label
+    return 'Not stated'
+
+
+def build_records(now=None):
+    rng = random.Random(20261105)
+    now = (now or datetime.now(timezone.utc)).replace(second=0, microsecond=0)
+    families = dict(FAMILIES)
+    plan = []
+    for tail, family, days in CLUSTERS:
+        for d in days:
+            plan.append((family, tail, d))
+    pool = [f for f, w in WEIGHTS.items() for _ in range(w)]
+    for f, tail, _ in plan:
+        pool.remove(f)
+    rng.shuffle(pool)
+    for f in pool:
+        tail = rng.choice(FLEET)[0]
+        plan.append((f, tail, int(rng.triangular(1, 180, 20))))  # more events in recent weeks
     records = []
-    for family_index, (family, descriptions) in enumerate(FAMILIES):
-        for variant, description in enumerate(descriptions):
-            number = family_index * 5 + variant + 1
-            # Repeated tails within a family, plus cross-family links across the fleet.
-            aircraft = (family_index * 2 + [0, 1, 2, 0, 1][variant]) % 15
-            event = datetime(2026, 1, 5, 7, 20, tzinfo=timezone.utc) + timedelta(days=number * 5, hours=number % 7)
-            departure = event + timedelta(days=[1, 3, 7, 15, 35][variant])
-            engine1 = f'DEMO-ENG-{aircraft * 2 + 1:05d}'
-            engine2 = f'DEMO-ENG-{aircraft * 2 + 2:05d}'
-            # A documented simulated engine transfer links different aircraft.
-            transfer = aircraft == 0 and event.month >= 6
-            if transfer:
-                engine1 = 'DEMO-ENG-00003'
-            elif aircraft == 1 and event.month >= 6:
-                engine1 = 'DEMO-ENG-90003'
-            row = dict.fromkeys(database.FIELDS, '')
-            row.update(source='Phone Transcript' if number % 2 == 0 else 'Email',
-                customer=CUSTOMERS[aircraft // 3], aircraftId=f'DEMO-AC-{aircraft + 1:03d}',
-                aircraftLocation=LOCATIONS[(family_index + variant * 3) % len(LOCATIONS)],
-                priority=database.PRIORITIES[2 + variant], eventTime=event.strftime('%Y-%m-%d %H:%M UTC'),
-                requestedDepartureDate=departure.strftime('%Y-%m-%d %H:%M UTC'), engine1=engine1, engine2=engine2,
-                problemNotes=f'[SYNTHETIC DEMO] {description}')
-            gaps = []
-            for modulus, key in [(7, 'requestedDepartureDate'), (9, 'engine2'), (11, 'eventTime'), (13, 'aircraftLocation'), (17, 'engine1')]:
-                if number % modulus == 0:
-                    row[key] = ''
-                    gaps.append(key)
-            if not row['requestedDepartureDate']:
-                row['priority'] = 'Pending'
-            context = ['Crew statement is preliminary; detailed EHM data has not been provided.',
-                'The operator supplied an initial log extract; engineering findings are still pending.',
-                'The report uses approximate observations; no diagnosis has been verified.',
-                'A prior related report is mentioned; this is a separate event, not a duplicate message.',
-                'Ground observations are available; no validated root cause is recorded.'][variant]
-            if transfer:
-                context += ' Fictional fleet log: DEMO-ENG-00003 transferred from DEMO-AC-002 to DEMO-AC-001 on 2026-06-01.'
-            row['problemNotes'] += ' ' + context
-            row['assistantSuggestions'] = 'DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.'
-            if gaps:
-                row['assistantSuggestions'] += ' Missing intake fields: ' + ', '.join(gaps) + '.'
-            row['originalText'] = f'[{DATASET}:{number:03d}] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\n'
-            row['originalText'] += ('Call transcript: Duty engineer reporting a new event.\n' if row['source'] == 'Phone Transcript' else 'Subject: Demo engine event report\n')
-            labels = {'customer':'Customer', 'aircraftId':'Aircraft ID', 'aircraftLocation':'Aircraft location',
-                'engine1':'Engine 1 Number', 'engine2':'Engine 2 Number', 'eventTime':'Event time', 'requestedDepartureDate':'Requested departure'}
-            row['originalText'] += '\n'.join(f'{label}: {row[key]}' for key, label in labels.items() if row[key])
-            row['originalText'] += '\n\n' + description + ' ' + context
-            records.append({'demoKey':f'{DATASET}:{number:03d}', 'similarityFamily':family, 'case':row})
+    for number, (family, tail, days_ago) in enumerate(sorted(plan, key=lambda p: -p[2]), 1):
+        ac = next(a for a in FLEET if a[0] == tail)
+        description = rng.choice(families[family])
+        event = now - timedelta(days=days_ago, hours=rng.randint(0, 20), minutes=rng.choice([0, 10, 25, 40, 55]))
+        turnaround = rng.choice([0.5, 1, 2, 3, 5, 7, 10, 14, 21, 35])
+        departure = event + timedelta(days=turnaround)
+        idx = FLEET.index(ac)
+        row = dict.fromkeys(database.FIELDS, '')
+        row.update(source='Phone Transcript' if rng.random() < 0.45 else 'Email', customer=CUSTOMERS[ac[3]], aircraftId=tail,
+                   aircraftLocation=rng.choices(LOCATIONS, weights=LOC_WEIGHTS)[0], eventTime=event.strftime('%Y-%m-%d %H:%M UTC'),
+                   requestedDepartureDate=departure.strftime('%Y-%m-%d %H:%M UTC'),
+                   engine1=f'DEMO-ENG-{idx * 2 + 1:05d}', engine2=f'DEMO-ENG-{idx * 2 + 2:05d}',
+                   problemNotes=f'[SYNTHETIC DEMO] {description}')
+        severe = any(k in description.lower() for k in ('shut down', 'shutdown', 'flamed out', 'fire warning'))
+        level = 1 if turnaround <= 1 else 2 if turnaround <= 3 else 3 if turnaround <= 14 else 4 if turnaround <= 30 else 5
+        if severe and 'ground' not in description.lower():
+            level = min(level, 2)  # severe in-flight event: at least urgent
+        row['priority'] = database.PRIORITIES[1 + level]
+        gaps = [k for k, p in (('engine2', .12), ('aircraftLocation', .06), ('requestedDepartureDate', .1), ('eventTime', .05)) if rng.random() < p]
+        for k in gaps:
+            row[k] = ''
+        if not row['requestedDepartureDate'] and not severe:
+            row['priority'] = 'Pending'
+        context = rng.choice(['Crew statement is preliminary; detailed EHM data has not been provided.',
+            'The operator supplied an initial log extract; engineering findings are still pending.',
+            'Ground observations are available; no validated root cause is recorded.',
+            'Aircraft is AOG pending engineering disposition.'])
+        row['problemNotes'] += ' ' + context
+        row['assistantSuggestions'] = 'DEMO review questions only: confirm crew statement, affected engine and event sequence; request the relevant EHM extract.'
+        if gaps:
+            row['assistantSuggestions'] += ' Missing intake fields: ' + ', '.join(gaps) + '.'
+        labels = {'customer':'Customer','aircraftId':'Aircraft ID','aircraftLocation':'Aircraft location','engine1':'Engine 1 Number',
+                  'engine2':'Engine 2 Number','eventTime':'Event time','requestedDepartureDate':'Requested departure'}
+        header = f'[{DATASET}:{number:03d}] SYNTHETIC TRAINING DATA — fictional operator, aircraft, engines and event.\n'
+        header += 'Call transcript: Duty engineer reporting a new event.\n' if row['source'] == 'Phone Transcript' else 'Subject: Demo engine event report\n'
+        header += '\n'.join(f'{label}: {row[key]}' for key, label in labels.items() if row[key])
+        header += f'\nAircraft type: {ac[1]}\nEngine type: {ac[2]}\nFlight phase: {phase_of(description)}\nATA chapter: {ATA[family]}'
+        row['originalText'] = header + '\n\n' + description + ' ' + context
+        records.append({'demoKey': f'{DATASET}:{number:03d}', 'similarityFamily': family, 'case': row})
     return records
 
 
 def main():
+    if '--reset' in sys.argv and database.DB_PATH.exists():
+        stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+        database.DB_PATH.rename(database.DB_PATH.with_name(f'incidents-before-reset-{stamp}.db'))
     database.initialize()
     records = build_records()
     for entry in records:

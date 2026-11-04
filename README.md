@@ -81,6 +81,7 @@ automatically, so the workshop demo does not depend on Wi-Fi.
 
 ## Current status
 
+**Prototype v0.8** adds realistic demo data (uneven distribution, recent weeks, aircraft/engine type, flight phase, ATA chapter; `python3 seed_demo_cases.py --reset`), a case history (audit trail), simulated EHM traces, live METAR weather via aviationweather.gov with demo fallback (`weather.py`) and an extraction accuracy check under Saved cases.
 **Prototype v0.7** adds a Forecast view (repeat events per aircraft/engine, rising symptoms, regional demand, simulated external signals), more robust rule-based extraction for spoken calls and a refined visual design.
 **Prototype v0.4** adds local AI extraction, explainable priority and an offline map.
 **v0.3** connected all screens to the local case database:
@@ -102,6 +103,7 @@ See [`PROJECT_BRIEF.md`](PROJECT_BRIEF.md) for the product context and [`BACKLOG
 - `app.js` – navigation, intake extraction, case persistence and saved-case list
 - `overview.js` – overview map, dashboard enrichment, response workspace and expert decision
 - `forecast.js` – forecast view derived from saved cases plus demo signals
+- `weather.py` – optional live METAR lookup with cache
 - `DEMO_SCRIPT.md` – end-to-end presentation script
 - `server.py` – local static server, case API and faster-whisper API
 - `database.py` – SQLite schema, migrations and persistence

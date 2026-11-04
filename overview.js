@@ -129,6 +129,21 @@ function similarCases(c){
  }).filter(x=>x.score>=0.2).sort((a,b)=>b.score-a.score).slice(0,3);
 }
 
+const ATA_BY_SYMPTOM={vibration:'77-30 Engine vibration indicating','oil-pressure':'79-30 Oil indicating','oil-consumption':'79-00 Oil system',egt:'77-20 EGT indicating',surge:'72-30 Compressor',bird:'72-00 Engine (bird strike inspection)',fuel:'73-00 Engine fuel and control',indication:'77-00 Engine indicating',smoke:'26-10 Fire detection / 79 oil',flameout:'74-00 Ignition'};
+function caseFacts(c){
+ const t=c.originalText||'', g=re=>(t.match(re)||[])[1]?.trim()||'';
+ return {type:g(/Aircraft type:\s*([^\n]+)/i), engine:g(/Engine type:\s*([^\n]+)/i), phase:g(/Flight phase:\s*([^\n]+)/i),
+  ata:g(/ATA chapter:\s*([^\n]+)/i)||ATA_BY_SYMPTOM[symptomsOf(c)[0]?.key]||''};
+}
+// Simulated EHM trace, deterministic per case: 36 samples from 30 min before to 5 min after the event.
+function ehmTrace(c,name,abnormal){
+ let seed=[...(c.caseId||c.aircraftId||'x')+name].reduce((s,ch)=>(s*31+ch.charCodeAt(0))>>>0,7);
+ const rnd=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);
+ const pts=[];for(let i=0;i<36;i++){let v=0.45+rnd()*0.08;if(abnormal&&i>=24)v+=Math.min(0.55,(i-23)*0.06);if(isShutdown(c)&&i>=32&&name!=='Oil quantity')v=0.08+rnd()*0.03;pts.push(v)}
+ const path=pts.map((v,i)=>`${i?'L':'M'}${(i/35*120).toFixed(1)} ${(30-v*28).toFixed(1)}`).join(' ');
+ return `<svg class="spark" viewBox="0 0 120 32" aria-hidden="true"><line x1="0" y1="${30-0.8*28}" x2="120" y2="${30-0.8*28}" class="limit"/><path d="${path}" class="${abnormal?'trace bad':'trace'}"/></svg>`;
+}
+
 /* ---------- Leaflet helpers ---------- */
 // Online: OpenStreetMap tiles. Offline (tiles fail to load): bundled Natural Earth land outlines.
 let landData=null;
@@ -269,6 +284,11 @@ function renderDashboardExtras(c){
  document.getElementById('dashboardParts').innerHTML=(symptoms[0]?.parts||['To be determined']).map(escapeHtml).join('<br>');
  set('dashboardSymptom',symptoms.length?symptoms.length:'!');
  set('wxLocation',loc?.iata||'—');set('wxText',loc?demoWeather(loc):'Location open');
+ const wxSrc=document.getElementById('wxSource');if(wxSrc)wxSrc.textContent='Demo';document.getElementById('wxText').classList.remove('metar');
+ if(loc&&location.protocol!=='file:')fetch(`/api/weather/${loc.iata}`).then(r=>r.json()).then(w=>{
+  if(!w.available||currentCase?.aircraftLocation!==c.aircraftLocation)return;
+  set('wxText',w.metar);document.getElementById('wxText').classList.add('metar');if(wxSrc)wxSrc.textContent='Live METAR';
+ }).catch(()=>{});
  set('apAircraft',c.aircraftId||'Aircraft open');set('apLocation',loc?.iata||'—');
 }
 document.getElementById('dashboardHistory').onclick=()=>show('response');
@@ -288,15 +308,16 @@ function renderResponse(){
  title.textContent=`${c.caseId||'Unsaved case'} · ${c.customer||'Customer open'}`;
  meta.textContent=[c.aircraftId||'Aircraft open',[c.engine1,c.engine2].filter(Boolean).join(' / ')||'Engine numbers open',
   loc?`on ground at ${loc.name} (${loc.iata})`:(c.aircraftLocation||'location open'),c.eventTime||'event time open'].join(' · ');
+ const facts=caseFacts(c);
+ document.getElementById('respFacts').textContent=[facts.type&&`${facts.type} · ${facts.engine}`,facts.phase&&facts.phase!=='Not stated'&&`Phase: ${facts.phase}`,facts.ata&&`ATA ${facts.ata}`].filter(Boolean).join(' · ');
  pr.textContent=level?`P${level} ${c.priority.replace(/^\d\s*-\s*/,'')}`:'Priority pending';
  pr.dataset.level=level;
  const suggestion=suggestPriority(c); // app.js
  document.getElementById('respPriorityWhy').textContent=`System suggestion: ${suggestion.priority} — ${suggestion.reasons.join(' · ')}`+
   (c.priority&&c.priority!==suggestion.priority?` · recorded priority differs: ${c.priority}`:'');
 
- document.getElementById('respEhm').innerHTML=EHM_SIGNALS.map(([name,re])=>mentions(c,re)
-  ?`<p>${name} <span class="red">reported abnormal</span></p>`:`<p>${name} <span class="muted">no report</span></p>`).join('')+
-  `<p class="hint">${isShutdown(c)?'Shutdown reported. ':''}Derived from the report text. A live EHM feed is not connected in this prototype.</p>`;
+ document.getElementById('respEhm').innerHTML=EHM_SIGNALS.map(([name,re])=>{const bad=mentions(c,re);const off=!bad&&isShutdown(c)&&name!=='Oil quantity';return `<p><span>${name}</span>${ehmTrace(c,name,bad)}<span class="${bad?'red':'muted'}">${bad?'above limit':off?'engine off':'normal'}</span></p>`}).join('')+
+  `<p class="hint">${isShutdown(c)?'Shutdown reported. ':''}Simulated traces, 30 min before to 5 min after the event, shaped by the report. Dashed line: alert limit. No live EHM feed in this prototype.</p>`;
 
  document.getElementById('respCompleteness').textContent=`${completenessOf(c)}%`;
  document.getElementById('respMissing').innerHTML=missing.length?missing.map(m=>`<p>⚠ ${escapeHtml(m)} missing</p>`).join(''):'<p>All intake fields present ✓</p>';
@@ -322,6 +343,7 @@ function renderResponse(){
 
  renderRespMap(c,loc,res);
  renderDecision(c);
+ renderHistory(c);
 }
 function renderRespMap(c,loc,res){
  if(!hasLeaflet){mapUnavailable('respMap');return}
@@ -338,6 +360,24 @@ function renderRespMap(c,loc,res){
  });
  respMap.fitBounds(pts,{padding:[40,40],maxZoom:7});
  setTimeout(()=>respMap.invalidateSize(),60);
+}
+
+/* ---------- Case history (audit trail) ---------- */
+const HIST_LABELS={priority:'Priority',decision:'Decision',decisionBy:'Expert',assignedResources:'Resources',customer:'Customer',aircraftId:'Aircraft',aircraftLocation:'Location',engine1:'Engine 1',engine2:'Engine 2',eventTime:'Event time',requestedDepartureDate:'Departure',problemNotes:'Notes'};
+async function renderHistory(c){
+ const panel=document.getElementById('historyPanel'),list=document.getElementById('historyList');
+ if(!c?.caseId){panel.hidden=true;return}
+ try{
+  const rows=await caseRequest(`/${encodeURIComponent(c.caseId)}/history`);
+  if(currentCase?.caseId!==c.caseId)return;
+  panel.hidden=false;
+  list.innerHTML=rows.map((r,i)=>{
+   const prev=rows[i-1]?.fields||{};
+   const changes=i===0?[]:Object.keys(HIST_LABELS).filter(k=>(prev[k]||'')!==(r.fields[k]||'')).map(k=>{const v=x=>k==='decision'?(DECISION_LABELS[x]||x||'—'):(x||'—');return k==='problemNotes'?'Notes edited':`${HIST_LABELS[k]}: ${v(prev[k])} → ${v(r.fields[k])}`});
+   const what={created:'Case created',updated:r.fields.decision&&r.fields.decision!==prev.decision?`Decision recorded by ${r.fields.decisionBy}`:'Case updated',deleted:'Moved to trash',restored:'Restored'}[r.action]||r.action;
+   return `<li><time class="mono">${escapeHtml(new Date(r.recordedAt).toLocaleString('de-DE'))}</time><b>${escapeHtml(what)}</b>${i===0?`<span>Priority ${escapeHtml(r.fields.priority||'Pending')}</span>`:changes.map(x=>`<span>${escapeHtml(x)}</span>`).join('')}</li>`;
+  }).reverse().join('');
+ }catch{panel.hidden=true}
 }
 
 /* ---------- Expert decision (human-in-the-loop) ---------- */
@@ -405,6 +445,43 @@ function onViewShown(id){
  if(id==='forecast'&&typeof renderForecast==='function'){(overviewLoaded?Promise.resolve():refreshCases().then(()=>{overviewLoaded=true})).then(renderForecast)}
 }
 document.getElementById('toAnalysis').onclick=()=>show('response');
+
+/* ---------- Extraction accuracy check ---------- */
+const EVAL_FIELDS=[['customer','Customer'],['aircraftId','Aircraft ID'],['aircraftLocation','Location'],['engine1','Engine 1'],['engine2','Engine 2'],['eventTime','Event time'],['requestedDepartureDate','Departure']];
+function sameValue(key,expected,got){
+ const e=String(expected||'').trim().toLowerCase(), g=String(got||'').trim().toLowerCase();
+ if(!e)return !g;                               // nothing stated: correct only if nothing invented
+ if(key==='aircraftLocation'){const a=locate(expected),b=locate(got);return a&&b?a.iata===b.iata:e===g}
+ if(key==='eventTime'||key==='requestedDepartureDate'){const d=s=>(s.match(/\d{4}-\d{2}-\d{2}/)||[''])[0];return d(e)!==''&&d(e)===d(g)}
+ return e===g;
+}
+async function runEval(){
+ const out=document.getElementById('evalResult'),btn=document.getElementById('runEval');
+ btn.disabled=true;out.innerHTML='<p class="hint">Checking …</p>';
+ try{
+  const list=(await caseRequest('?deleted=0')).slice(0,50);
+  const cases=[];for(const r of list){const c=await caseRequest(`/${encodeURIComponent(r.caseId)}`);if(/\[IFSD-DEMO-50/.test(c.originalText||''))cases.push(c)}
+  if(!cases.length){out.innerHTML='<p class="hint">No demo cases found. Load them with python3 seed_demo_cases.py.</p>';return}
+  const score=()=>Object.fromEntries(EVAL_FIELDS.map(([k])=>[k,[0,0]]));
+  const rules=score(),ai=score();let aiN=0;
+  // the header line with the dataset marker is part of the message, as in a real email
+  cases.forEach(c=>{const x=extractCase(c.originalText,c.source);EVAL_FIELDS.forEach(([k])=>{rules[k][1]++;if(sameValue(k,c[k],x[k]))rules[k][0]++})});
+  if(aiAvailable){
+   for(const c of cases.slice(0,10)){
+    out.innerHTML=`<p class="hint">Local AI: case ${aiN+1} of 10 …</p>`;
+    try{const r=await aiExtract(c.originalText);aiN++;EVAL_FIELDS.forEach(([k])=>{ai[k][1]++;if(sameValue(k,c[k],r.fields[k]))ai[k][0]++})}catch{break}
+   }
+  }
+  const pct=([a,n])=>n?Math.round(a/n*100)+' %':'–';
+  const total=s=>{const t=Object.values(s).reduce((x,[a,n])=>[x[0]+a,x[1]+n],[0,0]);return pct(t)};
+  out.innerHTML=`<table class="fc-table"><thead><tr><th>Field</th><th>Rules (${cases.length} cases)</th><th>Local AI (${aiN||'not running'})</th></tr></thead><tbody>
+   ${EVAL_FIELDS.map(([k,l])=>`<tr><td>${l}</td><td>${pct(rules[k])}</td><td>${aiN?pct(ai[k]):'–'}</td></tr>`).join('')}
+   <tr><td><b>All fields</b></td><td><b>${total(rules)}</b></td><td><b>${aiN?total(ai):'–'}</b></td></tr></tbody></table>
+   <p class="hint">A field counts as correct when it matches the stored value, or stays empty when the message does not state it. Demo messages contain labelled lines; free-form calls are harder, which is where local AI helps.</p>`;
+ }catch(error){out.innerHTML=`<p class="notice">${escapeHtml(error.message)}</p>`}
+ finally{btn.disabled=false}
+}
+document.getElementById('runEval').onclick=runEval;
 
 /* ---------- Boot ---------- */
 (function boot(){

@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 import sqlite3
 import database
 import extraction
+import weather
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -112,6 +113,8 @@ class IFSDHandler(SimpleHTTPRequestHandler):
                     result = database.list_cases(query.get('q', [''])[0], query.get('deleted', ['0'])[0] == '1')
                 elif len(parts) == 3:
                     result = database.get(parts[2])
+                elif len(parts) == 4 and parts[3] == 'history':
+                    result = database.history_for(parts[2])
                 else:
                     raise KeyError(parsed.path)
                 self.send_json(result)
@@ -169,6 +172,9 @@ class IFSDHandler(SimpleHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == '/api/cases' or path.startswith('/api/cases/'):
             self.case_api()
+            return
+        if path.startswith('/api/weather/'):
+            self.send_json(weather.metar(path.rsplit('/', 1)[-1]))
             return
         if path == '/api/extract/status':
             self.send_json(extraction.status())

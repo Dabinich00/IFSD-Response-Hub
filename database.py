@@ -123,6 +123,21 @@ def get(case_id):
             raise KeyError(case_id)
         return dict(row)
 
+def history_for(case_id):
+    """All recorded snapshots of one case, oldest first (audit trail)."""
+    with connection() as db:
+        if db.execute('SELECT 1 FROM incidents WHERE caseId = ?', (case_id,)).fetchone() is None:
+            raise KeyError(case_id)
+        rows = db.execute('''SELECT h.action, h.recordedAt, h.snapshot FROM incident_history h
+            JOIN incidents i ON i.id = h.incidentId WHERE i.caseId = ? ORDER BY h.id''', (case_id,)).fetchall()
+    keep = ('priority', 'decision', 'decisionBy', 'decisionNote', 'assignedResources', 'customer', 'aircraftId',
+            'aircraftLocation', 'engine1', 'engine2', 'eventTime', 'requestedDepartureDate', 'problemNotes', 'deletedAt')
+    out = []
+    for row in rows:
+        snap = json.loads(row['snapshot'])
+        out.append({'action': row['action'], 'recordedAt': row['recordedAt'], 'fields': {k: snap.get(k) for k in keep}})
+    return out
+
 def list_cases(query='', deleted=False):
     with connection() as db:
         rows = db.execute('''SELECT caseId, source, customer, aircraftId, aircraftLocation,

@@ -1,4 +1,4 @@
-# Demo-Szenario & Präsentations-Skript (v0.7)
+# Demo-Szenario & Präsentations-Skript (v0.8)
 
 Ein durchgängiges Szenario, das **alle Funktionen des Prototyps von A bis Z** zeigt und
 gleichzeitig als Funktionstest dient. Dauer: ca. 5–6 Minuten.
@@ -15,7 +15,7 @@ gleichzeitig als Funktionstest dient. Dauer: ca. 5–6 Minuten.
 python3 -m venv .venv
 source .venv/bin/activate            # Windows: .\.venv\Scripts\activate
 pip install -r requirements.txt      # nur für Live-Transkription nötig
-python3 seed_demo_cases.py           # lädt 50 synthetische Demo-Cases (einmalig)
+python3 seed_demo_cases.py --reset   # sichert die alte DB und lädt 50 realistische Demo-Cases
 python3 server.py
 ```
 
@@ -113,6 +113,12 @@ In der oberen Navigation **Forecast** klicken.
 | Prepare resources | „Wo sollten wir Teile vorab bereitstellen?" | Top-5 Standorte mit Teilevorschlag und Lager |
 
 ---
+
+### Extras für Rückfragen
+- **Response → Case history:** jede Änderung und Entscheidung mit Zeit und Person (Audit-Trail).
+- **Response → Engine indicators:** simulierte EHM-Kurven mit Alarmgrenze, ATA-Kapitel, Flugzeug- und Triebwerkstyp.
+- **Dashboard → Weather:** echtes METAR des Flughafens, wenn Internet da ist, sonst Demo-Wetter.
+- **Saved cases → Extraction accuracy → Run check:** Trefferquote der Regeln und der lokalen KI über die Demo-Cases.
 
 ## Roter Faden
 
