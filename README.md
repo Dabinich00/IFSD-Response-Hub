@@ -131,9 +131,10 @@ On each presenter's Windows computer:
 The CLI version must support `--ignore-user-config`, `--ignore-rules`,
 `--ephemeral`, and `--output-schema`. No account tokens are read or copied by this
 application. The CLI handles authentication. API-key login is rejected for this
-workflow. Optionally set `IFSD_CODEX_MODEL` locally to choose a model available to
-your account; otherwise the CLI default is used. Changing the model invalidates
-matching cache entries. A subscription does not imply unlimited requests.
+workflow. The application uses the selected CLI's default model. Optionally set
+`IFSD_CODEX_MODEL` locally to choose a model available to your account. Different
+model settings use separate cache entries. A subscription does not imply unlimited
+requests.
 
 `backend/extraction.py` runs a short, independent task in an empty temporary directory,
 with read-only sandboxing, no approval escalation, user configuration ignored,

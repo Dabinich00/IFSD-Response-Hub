@@ -20,6 +20,20 @@ class ExtractionTests(unittest.TestCase):
         self.fields.update(aircraftId='D-TEST',problemNotes='Vibration reported.')
     def tearDown(self):
         self.path.stop();self.temp.cleanup()
+
+    def test_prefers_working_editor_cli_over_older_npm_cli(self):
+        root=Path(self.temp.name)
+        commands={'codex.cmd':str(root/'codex.cmd'),'codex.exe':str(root/'editor-codex.exe'),'node':'node.exe'}
+        with patch.object(extraction.shutil,'which',side_effect=commands.get):
+            self.assertEqual(extraction.command_prefix(),[commands['codex.exe']])
+
+    def test_finds_editor_cli_when_not_on_path(self):
+        root=Path(self.temp.name)
+        executable=root/'.vscode'/'extensions'/'openai.chatgpt-demo'/'bin'/'windows-x86_64'/'codex.exe'
+        executable.parent.mkdir(parents=True)
+        executable.write_bytes(b'')
+        with patch.object(extraction.Path,'home',return_value=root), patch.object(extraction.shutil,'which',return_value=None):
+            self.assertEqual(extraction.command_prefix(),[str(executable)])
     def wait(self,key):
         for _ in range(100):
             result=extraction.get(key)

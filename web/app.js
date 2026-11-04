@@ -407,8 +407,9 @@ function setButtonBusy(button,busy,label,normalLabel){
 function friendlyProcessingError(error,kind){
  const message=String(error.message||'');
  if(/no speech|keine sprache/i.test(message))return 'No speech detected. Please record again.';
- if(/sign in|login/i.test(message))return 'Text processing is unavailable. Please try again later.';
+ if(/^Sign in to Codex CLI/i.test(message))return 'Text processing is unavailable. Please check your account connection.';
  if(/limit|quota/i.test(message))return 'Processing is temporarily unavailable. Please try again later.';
+ if(/Selected Codex model is unavailable/i.test(message))return 'Text processing is unavailable with the selected model.';
  if(/timed out|timeout|abort/i.test(message))return 'Processing took too long. Please try again.';
  if(/fetch|connection|server|verbindung|erreichbar|Python/i.test(message))return 'Unable to connect. Check that the application is running.';
  return kind==='recording'?'Unable to process the recording. Please try again.':'Unable to process the message. Please try again.';
