@@ -41,10 +41,12 @@ def transcribe_job(job_id, temp_path, language):
         )
         text = " ".join(segment.text.strip() for segment in segments).strip()
         if not text:
-            raise ValueError("Keine Sprache erkannt")
+            raise ValueError("No speech detected")
         update(status="done", text=text, language=info.language)
+    except ImportError:
+        update(status="error", error="Speech-to-text is not installed. Run: python3 -m pip install -r requirements.txt, then restart the server.")
     except Exception as error:
-        update(status="error", error=f"Transkription fehlgeschlagen: {error}")
+        update(status="error", error=f"Transcription failed: {error}")
     finally:
         temp_path.unlink(missing_ok=True)
         update(finished_at=time.monotonic())
@@ -169,7 +171,7 @@ class IFSDHandler(SimpleHTTPRequestHandler):
             with _jobs_lock:
                 job = _jobs.get(path.rsplit("/", 1)[-1])
                 result = dict(job) if job else None
-            self.send_json(result or {"error": "Auftrag nicht gefunden"},
+            self.send_json(result or {"error": "Transcription job not found"},
                            HTTPStatus.OK if result else HTTPStatus.NOT_FOUND)
             return
         super().do_GET()
@@ -185,7 +187,7 @@ class IFSDHandler(SimpleHTTPRequestHandler):
             self.extract_api()
             return
         if parsed.path != "/api/transcribe":
-            self.send_json({"error": "Endpoint nicht gefunden"}, HTTPStatus.NOT_FOUND)
+            self.send_json({"error": "Endpoint not found"}, HTTPStatus.NOT_FOUND)
             return
 
         try:
@@ -193,7 +195,7 @@ class IFSDHandler(SimpleHTTPRequestHandler):
         except ValueError:
             length = 0
         if not 0 < length <= MAX_AUDIO_BYTES:
-            self.send_json({"error": "Audio fehlt oder ist größer als 25 MB"}, HTTPStatus.BAD_REQUEST)
+            self.send_json({"error": "Audio is missing or larger than 25 MB"}, HTTPStatus.BAD_REQUEST)
             return
 
         media_type = self.headers.get("Content-Type", "audio/webm").split(";", 1)[0]
@@ -210,7 +212,7 @@ class IFSDHandler(SimpleHTTPRequestHandler):
                     if time.monotonic() - job.get("finished_at", time.monotonic()) > 3600:
                         del _jobs[key]
                 if any(job["status"] not in ("done", "error") for job in _jobs.values()):
-                    self.send_json({"error": "Eine Transkription läuft bereits. Bitte warten."}, HTTPStatus.CONFLICT)
+                    self.send_json({"error": "A transcription is already running. Please wait."}, HTTPStatus.CONFLICT)
                     return
                 job_id = uuid.uuid4().hex
                 _jobs[job_id] = {"status": "queued", "model": MODEL_NAME}
@@ -221,14 +223,14 @@ class IFSDHandler(SimpleHTTPRequestHandler):
             self.send_json(
                 {
                     "error": (
-                        "faster-whisper konnte nicht geladen werden. "
-                        f"Details: {error}"
+                        "Speech-to-text is not installed. "
+                        f"Run: python3 -m pip install -r requirements.txt ({error})"
                     )
                 },
                 HTTPStatus.SERVICE_UNAVAILABLE,
             )
         except Exception as error:
-            self.send_json({"error": f"Transkription fehlgeschlagen: {error}"}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            self.send_json({"error": f"Transcription failed: {error}"}, HTTPStatus.INTERNAL_SERVER_ERROR)
         finally:
             if temp_path:
                 temp_path.unlink(missing_ok=True)

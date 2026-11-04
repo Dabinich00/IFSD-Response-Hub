@@ -33,7 +33,7 @@ const stopRecordingButton=document.getElementById('stopRecording');
 
 if(startRecordingButton&&stopRecordingButton){
  startRecordingButton.onclick=async()=>{
-  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){setRecorderStatus('Browser unterstützt keine Aufnahme','error');return;}
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){setRecorderStatus('This browser cannot record audio','error');return;}
   try{
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
    const preferredType=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
@@ -41,12 +41,12 @@ if(startRecordingButton&&stopRecordingButton){
    mediaRecorder.ondataavailable=event=>{if(event.data.size)audioChunks.push(event.data)};
    mediaRecorder.onstop=()=>transcribeRecording(stream);
    mediaRecorder.start();recordingStartedAt=Date.now();updateRecordingTimer();recordingTimerId=setInterval(updateRecordingTimer,500);
-   startRecordingButton.disabled=true;stopRecordingButton.disabled=false;setRecorderStatus('Aufnahme läuft','recording');
-  }catch(error){setRecorderStatus(error.name==='NotAllowedError'?'Mikrofon nicht freigegeben':'Aufnahme nicht möglich','error');}
+   startRecordingButton.disabled=true;stopRecordingButton.disabled=false;setRecorderStatus('Recording','recording');
+  }catch(error){setRecorderStatus(error.name==='NotAllowedError'?'Microphone access denied':'Recording not possible','error');}
  };
 
  stopRecordingButton.onclick=()=>{
-  if(mediaRecorder?.state==='recording'){mediaRecorder.stop();clearInterval(recordingTimerId);stopRecordingButton.disabled=true;setRecorderStatus('Transkription läuft …','working');}
+  if(mediaRecorder?.state==='recording'){mediaRecorder.stop();clearInterval(recordingTimerId);stopRecordingButton.disabled=true;setRecorderStatus('Transcribing …','working');}
  };
 }
 
@@ -68,9 +68,9 @@ async function transcribeRecording(stream){
   const language=document.getElementById('transcriptionLanguage').value;
   const response=await fetch(`/api/transcribe${language?`?language=${language}`:''}`,{method:'POST',headers:{'Content-Type':audioBlob.type},body:audioBlob});
   let result=await response.json();
-  if(!response.ok)throw new Error(result.error||'Transkription fehlgeschlagen');
+  if(!response.ok)throw new Error(result.error||'Transcription failed');
   const jobId=result.job_id;
-  if(!jobId)throw new Error('Bitte Python-Server neu starten und Seite neu laden.');
+  if(!jobId)throw new Error('Restart the Python server and reload the page.');
   const started=Date.now();
   let failures=0;
   while(true){
@@ -80,17 +80,17 @@ async function transcribeRecording(stream){
     poll=await fetch(`/api/transcriptions/${jobId}`,{cache:'no-store',signal:AbortSignal.timeout(10000)});
     result=await poll.json();failures=0;
    }catch(error){
-    if(++failures>=5)throw new Error('Verbindung zum Server verloren. Bitte Server prüfen.');
-    setRecorderStatus('Verbindung wird wiederhergestellt …','working');continue;
+    if(++failures>=5)throw new Error('Lost connection to the server. Check that it is running.');
+    setRecorderStatus('Reconnecting …','working');continue;
    }
-   if(!poll.ok||result.status==='error')throw new Error(result.error||'Transkription fehlgeschlagen');
+   if(!poll.ok||result.status==='error')throw new Error(result.error||'Transcription failed');
    if(result.status==='done')break;
-   const stage=result.status==='loading'?'Modell wird geladen / heruntergeladen':result.status==='queued'?'Warteschlange':'Transkription läuft';
+   const stage=result.status==='loading'?'Loading speech model (first use downloads it)':result.status==='queued'?'Queued':'Transcribing';
    setRecorderStatus(`${stage} · ${result.model} · ${Math.floor((Date.now()-started)/1000)} s`,'working');
   }
   document.getElementById('sourceText').value=result.text;
-  setRecorderStatus(`Fertig · ${result.language||'auto'}`,'success');
- }catch(error){setRecorderStatus(error.message.includes('Failed to fetch')?'Lokaler Whisper-Server nicht erreichbar':error.message,'error');}
+  setRecorderStatus(`Transcribed · ${result.language||'auto'}`,'success');
+ }catch(error){setRecorderStatus(error.message.includes('Failed to fetch')?'Local server not reachable':error.message,'error');}
  finally{startRecordingButton.disabled=false;mediaRecorder=null;audioChunks=[];}
 }
 
