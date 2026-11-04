@@ -49,15 +49,15 @@ Der Text ist im Intake **bereits vorausgefüllt** (Datum = heute/morgen).
 | — | „Unser globales Lagebild: alle gespeicherten IFSD-Cases auf einer echten Karte." | Marker nach Priorität gefärbt, Teams (Raute) und Teilelager (Dreieck) |
 | Kacheln unten | „Kennzahlen werden live aus der Datenbank berechnet." | Active cases, offene Expertenentscheidungen, Prioritätsverteilung |
 | Recommendations | „Das System weist auf P1-Cases ohne Entscheidung und auf Muster in der Flotte hin." | z. B. „Most frequent symptom: Vibration" |
-| Toggle **Weather** | Layer-Steuerung | Wetter-Overlay an/aus |
+| Kartenebene **Weather (demo)** | Layer-Steuerung | Wetter-Overlay an/aus |
 
 ### Akt 1 · Intake — die Meldung wird zum Case (≈ 60 Sek)
-**„1 · Intelligent Incident Intake"** klicken.
+In der linken Leiste **Incident intake** klicken.
 
 | Aktion | Was man sagt | Erwartetes Ergebnis |
 |---|---|---|
 | Auf das Whisper-Widget zeigen | „Anrufe werden lokal per faster-whisper transkribiert." | Status *Ready* |
-| **Create case automatically** | „Aus unstrukturiertem Text wird ein strukturierter Case." | Felder: Customer *Demo Northstar Air*, Aircraft *DEMO-AC-017*, Location *Shannon*, Engines, Event Time, Priority **1 - Most urgent** (aus gewünschtem Abflug) |
+| **Create case** | „Aus unstrukturiertem Text wird ein strukturierter Case." | Felder: Customer *Demo Northstar Air*, Aircraft *DEMO-AC-017*, Location *Shannon*, Engines, Event Time, Priority **1 - Most urgent** (aus gewünschtem Abflug) |
 | Auf *Missing Information & Alerts* zeigen | „Lücken sind sofort sichtbar." | Hinweise + „Human review required" |
 | Ein Feld ändern | „Der Experte behält die Kontrolle — alles editierbar." | — |
 | **Save Case** | „Gespeichert in der lokalen Datenbank, ID wird vergeben." | *Saved IFSD-…* |
@@ -66,7 +66,7 @@ Der Text ist im Intake **bereits vorausgefüllt** (Datum = heute/morgen).
 | Aktion | Was man sagt | Erwartetes Ergebnis |
 |---|---|---|
 | Tab **Phone / Speech-to-Text**, folgenden Text einfügen (oder einsprechen) | „Ein echter Anruf hat keine Formularfelder." | — |
-| **Create case automatically** | „Eine lokale KI strukturiert den Anruf — nichts verlässt den Rechner. Erfundene IDs werden verworfen." | Status *Extracted with local AI*, Felder gefüllt, Priorität **1** mit Begründung *flameout reported* |
+| **Create case** | „Eine lokale KI strukturiert den Anruf — nichts verlässt den Rechner. Erfundene IDs werden verworfen." | Status *Extracted with local AI*, Felder gefüllt, Priorität **1** mit Begründung *flameout reported* |
 | Priorität auf 3 ändern | „Der Mensch kann überstimmen — beides bleibt sichtbar." | *Reviewer set 3 - Medium* neben dem Systemvorschlag |
 
 ```
@@ -74,7 +74,7 @@ Hello, this is the duty engineer from Demo Baltic Wings. Aircraft DEMO-AC-009, e
 ```
 
 ### Akt 2 · Response — Analyse & Ressourcen (≈ 90 Sek)
-**„Analysis & resources →"** klicken.
+**Analyse & assign resources** klicken.
 
 | Aktion | Was man sagt | Erwartetes Ergebnis |
 |---|---|---|
@@ -99,7 +99,7 @@ Hello, this is the duty engineer from Demo Baltic Wings. Aircraft DEMO-AC-009, e
 |---|---|---|
 | **Overview** | „Der Case ist sofort im Lagebild, offene Entscheidungen −1." | neuer Marker bei Shannon (weiß umrandet = entschieden) |
 | Marker anklicken → **Incident dashboard** | „Operative Einsatzsicht pro Case." | Kacheln mit Notes, Weather (Demo), Action, Field Service, Spare Parts, Aircraft |
-| **Response & resources →** | Rücksprung | Response-Screen desselben Cases |
+| **Open response & decision** | Rücksprung | Response-Screen desselben Cases |
 
 ---
 

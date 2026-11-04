@@ -420,7 +420,7 @@ async function loadCases(){
    const card=document.createElement('article');
    const title=document.createElement('h3');title.textContent=record.caseId;
    const detail=document.createElement('p');detail.textContent=[record.customer||'Customer unknown',record.aircraftId||'Aircraft unknown',record.aircraftLocation||'Location unknown',record.priority||'Pending'].join(' · ');
-   const notes=document.createElement('p');notes.textContent=record.problemNotes;
+   const notes=document.createElement('p');const shortNotes=(record.problemNotes||'').replace('[SYNTHETIC DEMO] ','');notes.textContent=record.problemNotes.length>=160?shortNotes.replace(/\s+\S*$/,'')+' …':shortNotes;
    const actions=document.createElement('div');actions.className='case-actions';
    const open=document.createElement('button');open.textContent=record.deletedAt?'Restore':'Open';
    open.onclick=async()=>{
@@ -435,7 +435,7 @@ async function loadCases(){
    };
    actions.append(open);
    if(!record.deletedAt&&typeof openCaseInResponse==='function'){
-    const respond=document.createElement('button');respond.textContent='Response →';
+    const respond=document.createElement('button');respond.textContent='Response';
     respond.onclick=()=>openCaseInResponse(record.caseId);
     actions.append(respond);
    }

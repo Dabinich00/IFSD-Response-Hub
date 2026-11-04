@@ -60,6 +60,8 @@ def get_model():
 
 
 class IFSDHandler(SimpleHTTPRequestHandler):
+    extensions_map = {**SimpleHTTPRequestHandler.extensions_map, '.woff2': 'font/woff2', '.geojson': 'application/geo+json'}
+
     def send_head(self):
         # Serve only public assets; never expose the database, source or Git files.
         path = urlparse(self.path).path
@@ -76,7 +78,7 @@ class IFSDHandler(SimpleHTTPRequestHandler):
         vendor = (Path(__file__).resolve().parent / 'vendor').resolve()
         target = (vendor / path[len('/vendor/'):]).resolve()
         return (target.is_file() and vendor in target.parents
-                and target.suffix in ('.js', '.css', '.png', '.json', '.geojson'))
+                and target.suffix in ('.js', '.css', '.png', '.json', '.geojson', '.woff2'))
 
     def extract_api(self):
         try:

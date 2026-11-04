@@ -56,7 +56,7 @@ const SYMPTOMS = [
  {key:'flameout', label:'Flameout / relight', re:/flamed? ?-?out|relight|restart|loss of combustion/i, action:'Combustion & ignition check', parts:['Igniter plug set','Fuel nozzle']}
 ];
 const EHM_SIGNALS = [['EGT',/\bEGT\b|exhaust gas temp/i],['Vibration',/vibrat/i],['Oil pressure',/oil[- ]pressure|öldruck/i],['Oil quantity',/oil (?:quantity|loss|leak|top-up|consumption)|ölstand/i],['Fuel flow',/fuel[- ]flow/i]];
-const PRIORITY_COLORS = {0:'#9aa9b1',1:'#f0525b',2:'#f3cf3b',3:'#57d779',4:'#58bdc7',5:'#58bdc7'};
+const PRIORITY_COLORS = {0:'#8D9AA6',1:'#D23F3F',2:'#E3A008',3:'#2F9B68',4:'#2F86A8',5:'#2F86A8'};
 const DECISION_LABELS = {'approve-plan':'Response plan approved','request-information':'Information requested','escalate-engineering':'Escalated to engineering','monitor-only':'Monitor only'};
 const hasLeaflet = typeof L !== 'undefined';
 
@@ -146,7 +146,7 @@ function baseMap(id,view,zoom){
   map.getContainer().classList.add('offline-map');
   try{
    const land=await landGeoJson();
-   L.geoJSON(land,{interactive:false,style:{color:'#9fb7ad',weight:1,fillColor:'#eef1e9',fillOpacity:1}}).addTo(map).bringToBack();
+   L.geoJSON(land,{interactive:false,style:{color:'#B9C4CE',weight:.8,fillColor:'#F7F9FA',fillOpacity:1}}).addTo(map).bringToBack();
    map.attributionControl.addAttribution('Offline map · Natural Earth');
   }catch{map.attributionControl.addAttribution('Offline – map background unavailable')}
  };
@@ -166,7 +166,7 @@ function mapUnavailable(id){
 /* ---------- Overview ---------- */
 function initOverviewMap(){
  if(!hasLeaflet){mapUnavailable('dashMap');return}
- dashMap=baseMap('dashMap',[48,-5],3);
+ dashMap=baseMap('dashMap',[46,-4],3);
  ['case','team','part'].forEach(k=>{mapLayers[k]=L.layerGroup().addTo(dashMap)});
  HUBS.forEach(h=>L.marker([h.lat,h.lng],{icon:shapeIcon('team')}).bindPopup(`<b>${escapeHtml(h.name)}</b><br>${escapeHtml(h.team)}<br><small>Demo resource</small>`).addTo(mapLayers.team));
  WAREHOUSES.forEach(w=>L.marker([w.lat,w.lng],{icon:shapeIcon('part')}).bindPopup(`<b>${escapeHtml(w.name)}</b><br><small>Demo resource</small>`).addTo(mapLayers.part));
@@ -188,7 +188,7 @@ function renderOverviewMarkers(){
   const angle=n*2.4, radius=n===1?0:0.35+0.12*Math.floor(n/6);
   const level=priorityLevel(c.priority);
   const marker=L.circleMarker([loc.lat+radius*Math.sin(angle),loc.lng+radius*1.5*Math.cos(angle)],{
-   radius:level===1?10:8,color:c.decision?'#ffffff':'#0c202c',weight:c.decision?2:3,fillColor:PRIORITY_COLORS[level],fillOpacity:1
+   radius:level===1?9:7,color:c.decision?'#ffffff':'#0F1C2E',weight:c.decision?2.5:2,fillColor:PRIORITY_COLORS[level],fillOpacity:1
   });
   marker.bindPopup(`<div class="map-pop"><b>${escapeHtml(c.caseId)}</b>
    <span>${escapeHtml(c.customer||'Customer open')} · ${escapeHtml(c.aircraftId||'Aircraft open')}</span>
@@ -220,9 +220,9 @@ function renderOverviewStats(){
  const top=Object.entries(family).sort((a,b)=>b[1]-a[1])[0];
  const list=urgent.slice(0,3).map(c=>`<a href="#" data-case="${escapeHtml(c.caseId)}">${escapeHtml(c.caseId.slice(-6))}</a>`).join(', ');
  document.getElementById('recoList').innerHTML=`<span>Recommendations</span>
-  <p>• ${urgent.length} Priority-1 case(s) without expert decision${urgent.length?`: ${list}${urgent.length>3?' …':''}`:''}</p>
-  <p>• ${incomplete} case(s) with missing intake information${noLocation?` (${noLocation} without location)`:''}</p>
-  ${top?`<p>• Most frequent symptom: ${escapeHtml(top[0])} (${top[1]} cases) — check for a fleet pattern</p>`:''}`;
+  <ul class="reco"><li>${urgent.length} priority-1 case${urgent.length===1?'':'s'} without expert decision${urgent.length?`: ${list}${urgent.length>3?' …':''}`:''}</li>
+  <li>${incomplete} case${incomplete===1?'':'s'} with missing intake information${noLocation?`, ${noLocation} without location`:''}</li>
+  ${top?`<li>Most frequent symptom: ${escapeHtml(top[0])} in ${top[1]} cases. Check for a fleet pattern.</li>`:''}</ul>`;
  document.querySelectorAll('#recoList [data-case]').forEach(a=>a.onclick=e=>{e.preventDefault();openCaseInResponse(a.dataset.case)});
 }
 async function loadOverview(){
@@ -258,6 +258,7 @@ function renderDashboardExtras(c){
  const loc=locate(c.aircraftLocation), symptoms=symptomsOf(c), res=resourcesFor(c);
  const index=allCases.findIndex(o=>o.caseId===c.caseId);
  set('dashboardCounter',index>=0?String(index+1).padStart(3,'0'):'new');
+ const lvl=priorityLevel(c.priority),pill=document.getElementById('dashboardLevel');pill.dataset.level=lvl;pill.textContent=lvl?`P${lvl}`:'–';
  const notes=(c.problemNotes||'').replace('[SYNTHETIC DEMO] ','');
  set('dashboardNotes',notes?(notes.length>170?`${notes.slice(0,167)}…`:notes):'No problem description yet.');
  if(symptoms.length||isShutdown(c))set('dashboardProblem',`${isShutdown(c)?'IFSD · ':''}${symptoms[0]?.label||'Engine shutdown'}`);
@@ -281,20 +282,20 @@ function renderResponse(){
  const c=currentCase;
  const title=document.getElementById('respTitle'), meta=document.getElementById('respMeta'), pr=document.getElementById('respPriority');
  document.getElementById('decisionPanel').hidden=!c;
- if(!c){document.getElementById('respPriorityWhy').textContent='';title.textContent='No case selected';meta.textContent='Create a case in Intake or pick a marker on the Overview map.';pr.textContent='–';return}
+ if(!c){document.getElementById('respPriorityWhy').textContent='';pr.dataset.level='';title.textContent='No case selected';meta.textContent='Create a case in Intake or pick a marker on the Overview map.';pr.textContent='–';return}
  const loc=locate(c.aircraftLocation), level=priorityLevel(c.priority), symptoms=symptomsOf(c), missing=missingFieldsOf(c), res=resourcesFor(c);
  title.textContent=`${c.caseId||'Unsaved case'} · ${c.customer||'Customer open'}`;
  meta.textContent=[c.aircraftId||'Aircraft open',[c.engine1,c.engine2].filter(Boolean).join(' / ')||'Engine numbers open',
   loc?`on ground at ${loc.name} (${loc.iata})`:(c.aircraftLocation||'location open'),c.eventTime||'event time open'].join(' · ');
- pr.textContent=c.priority&&c.priority!=='Pending'?`Priority ${c.priority}`:'Priority pending';
- pr.style.background=PRIORITY_COLORS[level];pr.style.color=level===2?'#3a2f00':'#fff';
+ pr.textContent=level?`P${level} ${c.priority.replace(/^\d\s*-\s*/,'')}`:'Priority pending';
+ pr.dataset.level=level;
  const suggestion=suggestPriority(c); // app.js
  document.getElementById('respPriorityWhy').textContent=`System suggestion: ${suggestion.priority} — ${suggestion.reasons.join(' · ')}`+
   (c.priority&&c.priority!==suggestion.priority?` · recorded priority differs: ${c.priority}`:'');
 
  document.getElementById('respEhm').innerHTML=EHM_SIGNALS.map(([name,re])=>mentions(c,re)
   ?`<p>${name} <span class="red">reported abnormal</span></p>`:`<p>${name} <span class="muted">no report</span></p>`).join('')+
-  `<p class="hint">${isShutdown(c)?'Shutdown reported. ':''}Live EHM feed not connected — indicators derived from the report text.</p>`;
+  `<p class="hint">${isShutdown(c)?'Shutdown reported. ':''}Derived from the report text. A live EHM feed is not connected in this prototype.</p>`;
 
  document.getElementById('respCompleteness').textContent=`${completenessOf(c)}%`;
  document.getElementById('respMissing').innerHTML=missing.length?missing.map(m=>`<p>⚠ ${escapeHtml(m)} missing</p>`).join(''):'<p>All intake fields present ✓</p>';
@@ -327,11 +328,11 @@ function renderRespMap(c,loc,res){
  respLayer.clearLayers();
  if(!loc){respMap.setView([50,-5],3);return}
  const pts=[[loc.lat,loc.lng]];
- L.circleMarker([loc.lat,loc.lng],{radius:10,color:'#8a1c1c',weight:3,fillColor:'#e14f55',fillOpacity:1})
+ L.circleMarker([loc.lat,loc.lng],{radius:10,color:'#0F1C2E',weight:3,fillColor:PRIORITY_COLORS[priorityLevel(c.priority)],fillOpacity:1})
   .bindPopup(`<b>${escapeHtml(c.aircraftId||'Aircraft')}</b><br>${escapeHtml(loc.name)} (${loc.iata})`).addTo(respLayer);
  res.filter(r=>r.lat!==null).forEach(r=>{
   L.marker([r.lat,r.lng],{icon:shapeIcon(r.type==='part'?'part':'team')}).bindPopup(`<b>${escapeHtml(r.name)}</b><br>${escapeHtml(r.detail)}<br>ETA ${escapeHtml(r.eta)}`).addTo(respLayer);
-  L.polyline([[r.lat,r.lng],[loc.lat,loc.lng]],{color:'#123452',weight:2,dashArray:'6 6'}).addTo(respLayer);
+  L.polyline([[r.lat,r.lng],[loc.lat,loc.lng]],{color:'#1B3A5C',weight:1.5,dashArray:'4 6'}).addTo(respLayer);
   pts.push([r.lat,r.lng]);
  });
  respMap.fitBounds(pts,{padding:[40,40],maxZoom:7});
@@ -344,7 +345,7 @@ function renderDecision(c){
  document.getElementById('decisionBy').value=c.decisionBy||'';
  document.getElementById('decisionNote').value=c.decisionNote||'';
  const state=document.getElementById('decisionState');
- state.textContent=c.decision?`${DECISION_LABELS[c.decision]} · ${c.decisionBy}${c.decidedAt?` · ${new Date(c.decidedAt).toLocaleString('de-DE')}`:''}`:'Open — awaiting expert';
+ state.textContent=c.decision?`${DECISION_LABELS[c.decision]} · ${c.decisionBy}${c.decidedAt?` · ${new Date(c.decidedAt).toLocaleString('de-DE')}`:''}`:'Awaiting expert';
  state.classList.toggle('done',!!c.decision);
  updateFollowup();
  document.getElementById('decisionStatus').textContent=c.caseId?'':'Save the case in Intake first — the decision is stored with the saved case.';
