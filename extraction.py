@@ -101,7 +101,9 @@ def sanitize(raw, text):
             value = ''
         if value and field in ('customer', 'aircraftLocation'):
             words = [w for w in re.findall(r'[\wÄÖÜäöüß]{3,}', value.lower())]
-            if words and not any(w in lower for w in words):
+            # Every word must be in the source text, so "Demo Baltic Wings" is not accepted
+            # for a message that only mentions "Demo Northstar Air".
+            if words and not all(w in lower for w in words):
                 value = ''
         result[field] = value
     return result

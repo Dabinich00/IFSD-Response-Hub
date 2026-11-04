@@ -87,6 +87,10 @@ class ExtractionTests(unittest.TestCase):
         self.assertEqual(fields['customer'], 'Demo Northstar Air')
         self.assertEqual(FakeOllama.requests[0]['options']['temperature'], 0)
 
+    def test_partially_matching_customer_is_dropped(self):
+        FakeOllama.reply['customer'] = 'Demo Atlantic Connect'
+        self.assertEqual(extraction.extract(TEXT)['fields']['customer'], '')
+
     def test_unknown_location_is_dropped(self):
         FakeOllama.reply['aircraftLocation'] = 'Reykjavik'
         self.assertEqual(extraction.extract(TEXT)['fields']['aircraftLocation'], '')

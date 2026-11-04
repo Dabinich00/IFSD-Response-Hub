@@ -1,6 +1,6 @@
 {
   "project": "IFSD Response Hub",
-  "version": "0.4",
+  "version": "0.7",
   "team": "Team 3 – In-Flight Shutdown",
   "core_features": [
     "Intelligent Incident Intake",

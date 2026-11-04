@@ -73,7 +73,7 @@ class IFSDHandler(SimpleHTTPRequestHandler):
     def send_head(self):
         # Serve only public assets; never expose the database, source or Git files.
         path = urlparse(self.path).path
-        if path not in ('/', '/index.html', '/app.js', '/overview.js', '/styles.css') and not self.is_vendor_asset(path):
+        if path not in ('/', '/index.html', '/app.js', '/overview.js', '/forecast.js', '/styles.css') and not self.is_vendor_asset(path):
             self.send_error(HTTPStatus.NOT_FOUND)
             return None
         return super().send_head()

@@ -1,4 +1,4 @@
-# Demo-Szenario & Präsentations-Skript (v0.4)
+# Demo-Szenario & Präsentations-Skript (v0.7)
 
 Ein durchgängiges Szenario, das **alle Funktionen des Prototyps von A bis Z** zeigt und
 gleichzeitig als Funktionstest dient. Dauer: ca. 5–6 Minuten.
@@ -100,6 +100,17 @@ Hello, this is the duty engineer from Demo Baltic Wings. Aircraft DEMO-AC-009, e
 | **Overview** | „Der Case ist sofort im Lagebild, offene Entscheidungen −1." | neuer Marker bei Shannon (weiß umrandet = entschieden) |
 | Marker anklicken → **Incident dashboard** | „Operative Einsatzsicht pro Case." | Kacheln mit Notes, Weather (Demo), Action, Field Service, Spare Parts, Aircraft |
 | **Open response & decision** | Rücksprung | Response-Screen desselben Cases |
+
+### Akt 5 · Forecast — Vorausschau (≈ 45 Sek, passt zu Folie 7)
+In der oberen Navigation **Forecast** klicken.
+
+| Aktion | Was man sagt | Erwartetes Ergebnis |
+|---|---|---|
+| Case volume | „Aus den gespeicherten Cases sehen wir die Last pro Monat." | Balken der letzten 6 Monate, Durchschnitt pro Monat |
+| Rising symptoms | „Welche Symptome nehmen zu?" | z. B. Smoke / odour 0 → 4 |
+| External signals | „Hier würden Wetter, Nachrichten und Social Media einfließen — im Prototyp simuliert." | 3 Demo-Signale, klar als *not connected* markiert |
+| Watch list | „Flugzeuge und Triebwerke mit wiederholten Ereignissen — Kandidaten für proaktive Inspektion." | Liste mit DEMO-AC-… / DEMO-ENG-…, **Latest case** öffnet den Case |
+| Prepare resources | „Wo sollten wir Teile vorab bereitstellen?" | Top-5 Standorte mit Teilevorschlag und Lager |
 
 ---
 

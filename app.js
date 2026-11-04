@@ -96,6 +96,7 @@ async function transcribeRecording(stream){
 
 // Local AI extraction (Ollama via server.py) with the rule-based extractor as fallback.
 let extractionInfo={method:'rules',detail:''};
+let aiAvailable=null;
 async function aiExtract(text){
  if(location.protocol==='file:')throw new Error('server not running');
  const response=await fetch('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -112,8 +113,9 @@ async function refreshAiStatus(){
  if(location.protocol==='file:'){setExtractStatus('Rule-based extraction (start server.py for local AI)');return}
  try{
   const s=await(await fetch('/api/extract/status',{cache:'no-store',signal:AbortSignal.timeout(5000)})).json();
+  aiAvailable=!!s.available;
   setExtractStatus(s.available?`Local AI ready · ${s.model}`:'Rule-based extraction · local AI (Ollama) not running',s.available?'success':'idle');
- }catch{setExtractStatus('Rule-based extraction','idle')}
+ }catch{aiAvailable=false;setExtractStatus('Rule-based extraction','idle')}
 }
 refreshAiStatus();
 
@@ -124,8 +126,11 @@ document.getElementById('extract').onclick=async()=>{
  const activeTab=document.querySelector('.tabs button.active')?.textContent||'E-Mail / Text';
  const button=document.getElementById('extract');
  const data=extractCase(sourceText,activeTab);
- button.disabled=true;setExtractStatus('Extracting with local AI …','working');
+ button.disabled=true;
+ if(aiAvailable!==true)await refreshAiStatus();
+ if(aiAvailable)setExtractStatus('Extracting with local AI …','working');
  try{
+  if(!aiAvailable)throw new Error('local AI not running');
   const ai=await aiExtract(sourceText);
   let used=0;
   for(const [key,value] of Object.entries(ai.fields||{}))if(value){data[key]=value;used++}
@@ -156,18 +161,26 @@ document.getElementById('extract').onclick=async()=>{
 function extractCase(text,activeTab){
  const m=(regex,fallback='')=>(text.match(regex)||[])[1]?.trim()||fallback;
  const requestedDepartureDate=extractRequestedDeparture(text);
- const customer=m(/\bCustomer:\s*([^\n\r]+)/i)||m(/\b(Lufthansa|British Airways|Emirates|Qatar Airways|LHA|BA)\b/i);
+ // Labelled emails first ("Customer: …"), then free speech ("… from Demo Baltic Wings").
+ const customer=m(/\bCustomer:\s*([^\n\r]+)/i)
+  ||m(/\b((?:Demo\s)?[A-Z][a-z]+(?:\s[A-Z][a-z]+)?\s(?:Air|Airways|Airlines|Wings|Connect|Aviation))\b/)
+  ||m(/\b(Lufthansa|British Airways|Emirates|Qatar Airways|LHA|BA)\b/i);
  const aircraftLocation=extractAircraftLocation(text);
+ const id='([A-Z0-9]+(?:-[A-Z0-9]+)+)';
+ const engine=n=>m(new RegExp(`\\bEngine\\s*${n}(?:\\s*Number|\\s*No\\.?|\\s*ID|\\s*serial(?: number)?)?\\s*:\\s*([A-Z0-9-]{4,24})\\b`,'i'))
+  ||m(new RegExp(`\\b[Ee]ngine\\s*${n}\\s*(?:serial(?: number)?|number|no\\.?|ID|is)\\s*:?\\s*${id}`));
  return {
   caseId:'',
   source:/phone|telefon/i.test(activeTab)?'Phone Transcript':'Email',
   customer:normalizeCustomer(customer),
-  aircraftId:m(/\b(?:Aircraft ID|Aircraft|Registration|Tail(?: number)?):\s*([A-Z0-9-]{4,12})\b/i)||m(/\b([A-Z]-[A-Z0-9]{4}|N[0-9A-Z]{4,6}|G-[A-Z0-9]{4})\b/i),
+  aircraftId:m(/\b(?:Aircraft ID|Aircraft|Registration|Tail(?: number)?):\s*([A-Z0-9-]{4,12})\b/i)
+   ||m(new RegExp(`\\b(?:[Aa]ircraft|[Rr]egistration|[Tt]ail(?: number)?)\\s+(?:is\\s+)?${id}`))
+   ||m(/\b([A-Z]-[A-Z]{4}|N[0-9][0-9A-Z]{2,5}|G-[A-Z]{4})\b/),
   aircraftLocation,
   eventTime:extractEventDateTime(text),
   requestedDepartureDate,
-  engine1:m(/\bEngine\s*1(?:\s*Number|\s*No\.?|\s*ID)?\s*:\s*([A-Z0-9-]{4,24})\b/i),
-  engine2:m(/\bEngine\s*2(?:\s*Number|\s*No\.?|\s*ID)?\s*:\s*([A-Z0-9-]{4,24})\b/i),
+  engine1:engine(1),
+  engine2:engine(2),
   problemNotes:extractProblemNotes(text),
   assistantSuggestions:'',
   priority:calculatePriority(requestedDepartureDate)
@@ -217,8 +230,19 @@ function suggestPriority(data){
 }
 function priorityNote(s){return `Priority suggestion: ${s.priority} — ${s.reasons.join('; ')}. Review and adjust if needed.`}
 
+function relativeDeparture(text){
+ // Spoken requests: "back in service tomorrow", "depart again today", "ready in 3 days"
+ const ctx=/\b(?:back in service|in service|depart\w*|return to service|ready|fly again|wieder\s+fliegen|abflug)\b[^.]{0,60}/i.exec(text);
+ if(!ctx)return '';
+ const s=ctx[0],day=new Date();
+ if(/\btomorrow\b|\bmorgen\b/i.test(s))day.setDate(day.getDate()+1);
+ else if(/\bin\s+(\d+)\s+days?\b/i.test(s))day.setDate(day.getDate()+Number(s.match(/\bin\s+(\d+)\s+days?\b/i)[1]));
+ else if(!/\btoday\b|\bheute\b/i.test(s))return '';
+ return day.toISOString().slice(0,10);
+}
+
 function extractRequestedDeparture(text){
- return mDate(/\b(?:depart(?:ure)? again|next departure|requested departure|ready for departure|return to service)\D{0,40}(\d{4}-\d{2}-\d{2}(?:\s+at\s+\d{1,2}:\d{2}\s*UTC)?)\b/i,text)
+ return relativeDeparture(text)||mDate(/\b(?:depart(?:ure)? again|next departure|requested departure|ready for departure|return to service)\D{0,40}(\d{4}-\d{2}-\d{2}(?:\s+at\s+\d{1,2}:\d{2}\s*UTC)?)\b/i,text)
   ||mDate(/\b(\d{4}-\d{2}-\d{2}(?:\s+at\s+\d{1,2}:\d{2}\s*UTC)?)\b/i,text);
 }
 

@@ -81,6 +81,7 @@ automatically, so the workshop demo does not depend on Wi-Fi.
 
 ## Current status
 
+**Prototype v0.7** adds a Forecast view (repeat events per aircraft/engine, rising symptoms, regional demand, simulated external signals), more robust rule-based extraction for spoken calls and a refined visual design.
 **Prototype v0.4** adds local AI extraction, explainable priority and an offline map.
 **v0.3** connected all screens to the local case database:
 
@@ -100,6 +101,7 @@ See [`PROJECT_BRIEF.md`](PROJECT_BRIEF.md) for the product context and [`BACKLOG
 - `styles.css` – responsive visual styling
 - `app.js` – navigation, intake extraction, case persistence and saved-case list
 - `overview.js` – overview map, dashboard enrichment, response workspace and expert decision
+- `forecast.js` – forecast view derived from saved cases plus demo signals
 - `DEMO_SCRIPT.md` – end-to-end presentation script
 - `server.py` – local static server, case API and faster-whisper API
 - `database.py` – SQLite schema, migrations and persistence
@@ -151,7 +153,7 @@ Restart an already running server and reload the browser after updating the code
   automatically to schema version 2 on server start; no data is lost.
 
 The `data/` directory is excluded from Git and is never served as a static web
-asset. Only index.html, app.js, overview.js, styles.css and files in vendor/ are publicly served. This remains a
+asset. Only index.html, app.js, overview.js, forecast.js, styles.css and files in vendor/ are publicly served. This remains a
 local application bound to 127.0.0.1, without multi-user authentication.
 
 For a simple backup, stop the server and copy the entire `data/` directory to a
@@ -165,6 +167,7 @@ Run checks with:
 .\.venv\Scripts\python.exe -m unittest test_database test_extraction -v
 node --check app.js
 node --check overview.js
+node --check forecast.js
 ```
 
 Database tests use temporary databases and do not write demo records into the

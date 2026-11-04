@@ -219,6 +219,7 @@ function renderOverviewStats(){
  const family={};allCases.forEach(c=>symptomsOf(c).forEach(s=>family[s.label]=(family[s.label]||0)+1));
  const top=Object.entries(family).sort((a,b)=>b[1]-a[1])[0];
  const list=urgent.slice(0,3).map(c=>`<a href="#" data-case="${escapeHtml(c.caseId)}">${escapeHtml(c.caseId.slice(-6))}</a>`).join(', ');
+ if(!allCases.length){document.getElementById('recoList').innerHTML='<span>Recommendations</span><p class="muted">Recommendations appear once cases are saved.</p>';return}
  document.getElementById('recoList').innerHTML=`<span>Recommendations</span>
   <ul class="reco"><li>${urgent.length} priority-1 case${urgent.length===1?'':'s'} without expert decision${urgent.length?`: ${list}${urgent.length>3?' …':''}`:''}</li>
   <li>${incomplete} case${incomplete===1?'':'s'} with missing intake information${noLocation?`, ${noLocation} without location`:''}</li>
@@ -401,6 +402,7 @@ function onCaseSaved(){refreshCases().then(()=>{if(document.getElementById('resp
 function onViewShown(id){
  if(id==='overview'){loadOverview()}
  if(id==='response'){(overviewLoaded?Promise.resolve():refreshCases().then(()=>{overviewLoaded=true})).then(renderResponse)}
+ if(id==='forecast'&&typeof renderForecast==='function'){(overviewLoaded?Promise.resolve():refreshCases().then(()=>{overviewLoaded=true})).then(renderForecast)}
 }
 document.getElementById('toAnalysis').onclick=()=>show('response');
 
