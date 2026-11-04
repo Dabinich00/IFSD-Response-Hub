@@ -2,12 +2,12 @@
 
 Continue development of this repository as **IFSD Response Hub v0.2**.
 
-Read `AGENTS.md`, `PROJECT_BRIEF.md`, and `BACKLOG.md` first.
+Read `AGENTS.md`, `docs/PROJECT_BRIEF.md`, and `docs/BACKLOG.md` first.
 
-Start by inspecting the existing `index.html`, `styles.css`, and `app.js`.
+Start by inspecting `web/index.html`, `web/styles.css`, and `web/app.js`.
 
 Goal:
-Turn the current static proof-of-concept into a polished, highly clickable student prototype that can be demonstrated live during the Rolls-Royce / TH Wildau innovation workshop.
+Improve the current local student prototype for a live Rolls-Royce / TH Wildau innovation workshop demonstration. Keep the browser UI, Python server, and SQLite case store working together.
 
 Prioritize:
 1. Intelligent Incident Intake

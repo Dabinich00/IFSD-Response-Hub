@@ -43,13 +43,12 @@ Merge event analysis and geo-resource mapping into one response workspace:
 7. All operational/technical data in the prototype must be clearly labeled as demo/mock data unless provided by the team.
 
 ## Current prototype
-Static web prototype using:
-- HTML
-- CSS
-- vanilla JavaScript
-No backend, build step, or external dependencies.
+Local prototype using vanilla HTML, CSS and JavaScript in `web/`, with a Python
+HTTP server (`server.py`), SQLite case storage in `backend/`, optional local
+faster-whisper transcription, and Codex CLI text-to-case extraction.
 
-Open `index.html` directly in a browser.
+Run `python server.py` from the repository root and open http://127.0.0.1:8000.
+`web/index.html` alone only shows the static interface.
 
 ## Current demo flow
 Dashboard

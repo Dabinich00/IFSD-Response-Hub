@@ -4,7 +4,7 @@ import sqlite3
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-import database
+from backend import database
 
 DATASET = 'IFSD-DEMO-50-v1'
 CUSTOMERS = ['Demo Northstar Air', 'Demo Atlantic Connect', 'Demo Baltic Wings', 'Demo Alpine Airways', 'Demo Meridian Air']
@@ -142,7 +142,7 @@ def main():
     for entry in records:
         database.validate(entry['case'])
     assert len(records) == 50
-    target = Path(__file__).resolve().parent / 'examples' / 'incidents-50.json'
+    target = Path(__file__).resolve().parent.parent / 'examples' / 'incidents-50.json'
     target.parent.mkdir(exist_ok=True)
     target.write_text(json.dumps(records, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     backup = database.DB_PATH.parent / ('before-demo-import-' + datetime.now().strftime('%Y%m%d-%H%M%S-%f') + '.db')

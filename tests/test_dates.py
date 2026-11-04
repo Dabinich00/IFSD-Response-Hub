@@ -1,7 +1,6 @@
 ﻿import unittest
-from date_fields import normalize_date
-import extraction
-import database
+from backend.date_fields import normalize_date
+from backend import extraction, database
 
 class DateTests(unittest.TestCase):
     def test_formats_and_time(self):

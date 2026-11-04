@@ -10,9 +10,9 @@ import tempfile
 import threading
 import time
 from contextlib import contextmanager
-from date_fields import normalize_date
+from .date_fields import normalize_date
 
-CACHE_PATH = Path(__file__).resolve().parent / 'data' / 'extraction-cache.db'
+CACHE_PATH = Path(__file__).resolve().parent.parent / 'data' / 'extraction-cache.db'
 VERSION = 'case-extraction-v2-english-german-dates'
 TIMEOUT = 180
 FIELDS = ('customer', 'aircraftId', 'aircraftLocation', 'eventTime',

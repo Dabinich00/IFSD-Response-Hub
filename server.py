@@ -10,8 +10,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 import sqlite3
-import database
-import extraction
+from backend import database, extraction
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -19,6 +18,8 @@ from urllib.parse import parse_qs, urlparse
 
 HOST = "127.0.0.1"
 PORT = int(os.environ.get("IFSD_PORT", "8000"))
+ROOT_DIR = Path(__file__).resolve().parent
+WEB_DIR = ROOT_DIR / "web"
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
 MODEL_NAME = os.environ.get("WHISPER_MODEL", "base")
 _model = None
@@ -60,6 +61,9 @@ def get_model():
 
 
 class IFSDHandler(SimpleHTTPRequestHandler):
+    def __init__(self, request, client_address, server):
+        super().__init__(request, client_address, server, directory=str(WEB_DIR))
+
     def send_head(self):
         # Serve only public assets; never expose the database, source or Git files.
         path = urlparse(self.path).path
@@ -228,7 +232,7 @@ class IFSDHandler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    os.chdir(Path(__file__).resolve().parent)
+    os.chdir(ROOT_DIR)
     database.initialize()
     extraction.initialize()
     print(f"IFSD Response Hub: http://{HOST}:{PORT}")

@@ -4,9 +4,9 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from date_fields import normalize_date
+from .date_fields import normalize_date
 
-DB_PATH = Path(__file__).resolve().parent / 'data' / 'incidents.db'
+DB_PATH = Path(__file__).resolve().parent.parent / 'data' / 'incidents.db'
 FIELDS = ('source', 'customer', 'aircraftId', 'aircraftLocation', 'priority',
           'eventTime', 'requestedDepartureDate', 'engine1', 'engine2',
           'problemNotes', 'assistantSuggestions', 'originalText')

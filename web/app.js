@@ -32,7 +32,7 @@ const stopRecordingButton=document.getElementById('stopRecording');
 
 if(startRecordingButton&&stopRecordingButton){
  startRecordingButton.onclick=async()=>{
-  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){setRecorderStatus('Browser unterstützt keine Aufnahme','error');return;}
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){setRecorderStatus('Recording is not supported in this browser.','error');return;}
   try{
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
    const preferredType=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
@@ -40,19 +40,19 @@ if(startRecordingButton&&stopRecordingButton){
    mediaRecorder.ondataavailable=event=>{if(event.data.size)audioChunks.push(event.data)};
    mediaRecorder.onstop=()=>transcribeRecording(stream);
    mediaRecorder.start();recordingStartedAt=Date.now();updateRecordingTimer();recordingTimerId=setInterval(updateRecordingTimer,500);
-   startRecordingButton.disabled=true;stopRecordingButton.disabled=false;setRecorderStatus('Aufnahme läuft','recording');
-  }catch(error){setRecorderStatus(error.name==='NotAllowedError'?'Allow microphone access to record.':'Aufnahme nicht möglich','error');}
+   startRecordingButton.disabled=true;stopRecordingButton.disabled=false;setRecorderStatus('Recording','recording');
+  }catch(error){setRecorderStatus(error.name==='NotAllowedError'?'Allow microphone access to record.':'Unable to start recording.','error');}
  };
 
  stopRecordingButton.onclick=()=>{
-  if(mediaRecorder?.state==='recording'){mediaRecorder.stop();clearInterval(recordingTimerId);stopRecordingButton.disabled=true;setRecorderStatus('Transkription läuft …','working');}
+  if(mediaRecorder?.state==='recording'){mediaRecorder.stop();clearInterval(recordingTimerId);stopRecordingButton.disabled=true;setRecorderStatus('Processing recording...','working');}
  };
 }
 
 function setRecorderStatus(message,state='idle'){
  const status=document.getElementById('recorderStatus');if(!status)return;
  status.textContent=message;status.dataset.state=state;
- setButtonBusy(stopRecordingButton,state==='working','Processing?','? Stop & transcribe');
+ setButtonBusy(stopRecordingButton,state==='working','Processing...','Stop & transcribe');
 }
 
 function updateRecordingTimer(){
@@ -81,15 +81,15 @@ async function transcribeRecording(stream){
     result=await poll.json();failures=0;
    }catch(error){
     if(++failures>=5)throw new Error('Verbindung zum Server verloren. Bitte Server prüfen.');
-    setRecorderStatus('Verbindung wird wiederhergestellt …','working');continue;
+    setRecorderStatus('Processing recording...','working');continue;
    }
    if(!poll.ok||result.status==='error')throw new Error(result.error||'Transkription fehlgeschlagen');
    if(result.status==='done')break;
-   setRecorderStatus('Processing recording?','working');
+   setRecorderStatus('Processing recording...','working');
   }
   document.getElementById('sourceText').value=result.text;
   updateExtractionButton();
-  setRecorderStatus(`Fertig · ${result.language||'auto'}`,'success');
+  setRecorderStatus('Recording ready.','success');
  }catch(error){console.error('Transcription failed:',error);setRecorderStatus(friendlyProcessingError(error,'recording'),'error');}
  finally{startRecordingButton.disabled=false;mediaRecorder=null;audioChunks=[];}
 }
@@ -102,7 +102,7 @@ const extractionStatus=document.getElementById('extractionStatus');
 const retryExtraction=document.getElementById('retryExtraction');
 function normalizedSource(){return document.getElementById('sourceText').value.replace(/\r\n?/g,'\n').trim()}
 function updateExtractionButton(){
- setButtonBusy(extractionButton,extractionBusy,'Processing?','Create Case');
+ setButtonBusy(extractionButton,extractionBusy,'Processing...','Create Case');
  extractionButton.disabled=extractionBusy||caseSaving||!normalizedSource()||normalizedSource()===lastAppliedText;
 }
 document.getElementById('sourceText').addEventListener('input',()=>{retryExtraction.hidden=true;updateExtractionButton()});
@@ -110,7 +110,7 @@ async function extractionRequest(path,options={}){
  if(location.protocol==='file:')throw new Error('Open http://127.0.0.1:8000 after starting the Python server.');
  const response=await fetch(path,{...options,cache:'no-store',signal:AbortSignal.timeout(15000)});
  let result;
- try{result=await response.json()}catch{throw new Error('Restart the Python server to enable Codex analysis.')}
+ try{result=await response.json()}catch{throw new Error('Unable to process the message. Please restart the application.')}
  if(!response.ok)throw new Error(result.error||'Analysis request failed.');
  return result;
 }
@@ -124,7 +124,7 @@ async function analyzeText(retry=false){
  extractionBusy=true;retryExtraction.hidden=true;updateExtractionButton();
  document.getElementById('toResponse').disabled=true;
  document.querySelectorAll('[data-case-field]').forEach(input=>input.disabled=true);
- extractionStatus.textContent='Processing message?';
+ extractionStatus.textContent='Processing...';
  
  try{
   const job=await extractionRequest('/api/extractions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,retry})});
@@ -133,7 +133,7 @@ async function analyzeText(retry=false){
    result=await extractionRequest(`/api/extractions/${job.job_id}`);
    if(result.status==='error'){retryExtraction.hidden=false;throw new Error(result.error)}
    if(result.status==='done')break;
-   extractionStatus.textContent='Processing message?';
+   extractionStatus.textContent='Processing...';
    await new Promise(resolve=>setTimeout(resolve,1000));
   }
   if(version!==extractionViewVersion||normalizedSource()!==text){extractionStatus.textContent='The message changed. Select Create Case to process the updated text.';return;}
@@ -144,7 +144,7 @@ async function analyzeText(retry=false){
   document.getElementById('intake').classList.add('case-created');
   syncDashboard(currentCase,text);
   document.getElementById('toResponse').disabled=false;
-  document.getElementById('saveStatus').textContent='Review the case details before saving.';
+  document.getElementById('saveStatus').textContent='';
   extractionStatus.textContent='Case ready for review.';
  }catch(error){console.error('Case analysis failed:',error);extractionStatus.textContent=friendlyProcessingError(error,'message');}
  finally{
@@ -322,7 +322,8 @@ document.getElementById('toResponse').onclick=async()=>{
  document.getElementById('toResponse').disabled=true;
  document.getElementById('extract').disabled=true;
  document.querySelectorAll('[data-case-field]').forEach(input=>input.disabled=true);
- status.textContent='Saving…';
+ setButtonBusy(document.getElementById('toResponse'),true,'Saving...','Save Case');
+ status.textContent='';
  try{
   const id=currentCase.caseId;
   currentCase=await caseRequest(id?`/${encodeURIComponent(id)}`:'',id?'PUT':'POST',currentCase);
@@ -333,7 +334,7 @@ document.getElementById('toResponse').onclick=async()=>{
  }catch(error){console.error('Save failed:',error);status.textContent=/date/i.test(error.message)?'Please enter a valid date as DD.MM.YYYY, or leave it empty.':/another window|changed/i.test(error.message)?'This case has changed. Reopen it before saving.':'Unable to confirm saving. Check Saved Cases before trying again.'}
  finally{
   caseSaving=false;
-  setButtonBusy(document.getElementById('toResponse'),false,'Saving?','Save Case');
+  setButtonBusy(document.getElementById('toResponse'),false,'Saving...','Save Case');
   document.getElementById('toResponse').disabled=false;
   updateExtractionButton();
   document.querySelectorAll('[data-case-field]').forEach(input=>input.disabled=false);
@@ -406,7 +407,7 @@ function setButtonBusy(button,busy,label,normalLabel){
 function friendlyProcessingError(error,kind){
  const message=String(error.message||'');
  if(/no speech|keine sprache/i.test(message))return 'No speech detected. Please record again.';
- if(/sign in|login/i.test(message))return 'Text processing is unavailable. Please check your sign-in in the terminal.';
+ if(/sign in|login/i.test(message))return 'Text processing is unavailable. Please try again later.';
  if(/limit|quota/i.test(message))return 'Processing is temporarily unavailable. Please try again later.';
  if(/timed out|timeout|abort/i.test(message))return 'Processing took too long. Please try again.';
  if(/fetch|connection|server|verbindung|erreichbar|Python/i.test(message))return 'Unable to connect. Check that the application is running.';

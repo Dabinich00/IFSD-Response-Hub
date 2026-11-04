@@ -7,7 +7,7 @@ validated maintenance advice. All aircraft and engine identifiers use DEMO prefi
 Run from the project directory:
 
 ```powershell
-.\.venv\Scripts\python.exe seed_demo_cases.py
+.\.venv\Scripts\python.exe -m scripts.seed_demo_cases
 ```
 
 The importer generates this fixture, backs up the current SQLite database using
