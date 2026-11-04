@@ -78,7 +78,14 @@ function airport(code){const [name,lat,lng]=AIRPORTS[code];return {iata:code,nam
 function priorityLevel(p){return Number((String(p||'').match(/^([1-5])/)||[])[1]||0)}
 // A term counts only in a sentence that does not negate it ("no shutdown occurred",
 // "with no reported oil-pressure change", "not an in-flight shutdown").
-function mentions(c,re){return mentionsText(`${c.problemNotes||''}.\n${c.originalText||''}`,re)} // mentionsText: app.js
+function mentionsText(text,re){
+ return String(text||'').split(/(?<=[.!?;])\s+|\n+/).some(sentence=>{
+  const hit=sentence.match(re);
+  if(!hit)return false;
+  return !/\b(no|not|without|kein(e|en)?|nicht)\b[^,]{0,40}$/i.test(sentence.slice(0,hit.index));
+ });
+}
+function mentions(c,re){return mentionsText(`${c.problemNotes||''}.\n${c.originalText||''}`,re)}
 function symptomsOf(c){return SYMPTOMS.filter(s=>mentions(c,s.re))}
 function isShutdown(c){return mentions(c,/shut ?down|shut the engine down|abgeschaltet|\bIFSD\b/i)}
 function km(a,b){

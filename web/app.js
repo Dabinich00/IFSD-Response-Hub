@@ -343,10 +343,12 @@ document.getElementById('toResponse').onclick=async()=>{
   const id=currentCase.caseId;
   currentCase=await caseRequest(id?`/${encodeURIComponent(id)}`:'',id?'PUT':'POST',currentCase);
   caseDirty=false;
-  renderCase(currentCase);renderAlerts(currentCase);
-  syncDashboard(currentCase,currentCase.originalText||'');
   status.textContent=`Saved ${currentCase.caseId}`;
-  if(typeof onCaseSaved==='function')onCaseSaved(currentCase);
+  try{
+   renderCase(currentCase);renderAlerts(currentCase);
+   syncDashboard(currentCase,currentCase.originalText||'');
+   if(typeof onCaseSaved==='function')onCaseSaved(currentCase);
+  }catch(error){console.error('Saved case could not be displayed:',error)}
  }catch(error){console.error('Save failed:',error);status.textContent=/date/i.test(error.message)?'Please enter a valid date as DD.MM.YYYY, or leave it empty.':/another window|changed/i.test(error.message)?'This case has changed. Reopen it before saving.':'Unable to confirm saving. Check Saved Cases before trying again.'}
  finally{
   caseSaving=false;
@@ -388,7 +390,7 @@ async function loadCases(){
    };
    actions.append(open);
    if(!record.deletedAt&&typeof openCaseInResponse==='function'){
-    const respond=document.createElement('button');respond.textContent='Response';
+    const respond=document.createElement('button');respond.textContent='Übersicht';
     respond.onclick=()=>openCaseInResponse(record.caseId);
     actions.append(respond);
    }
