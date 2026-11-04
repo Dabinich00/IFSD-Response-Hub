@@ -33,7 +33,7 @@ const stopRecordingButton=document.getElementById('stopRecording');
 
 if(startRecordingButton&&stopRecordingButton){
  startRecordingButton.onclick=async()=>{
-  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){setRecorderStatus('This browser cannot record audio','error');return;}
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){setRecorderStatus(window.isSecureContext?'This browser cannot record audio':'Recording works on the laptop only (needs a secure connection). Paste the text instead.','error');return;}
   try{
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
    const preferredType=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type=>MediaRecorder.isTypeSupported(type));

@@ -156,3 +156,4 @@ derselbe Case ist über **alle Screens** konsistent sichtbar.
 - **Overview leer:** `python3 seed_demo_cases.py` ausführen und Seite neu laden.
 - **„Start python server.py …":** Seite wurde per Doppelklick (`file://`) geöffnet → über `http://127.0.0.1:8000` öffnen.
 - **Transkription „nicht erreichbar":** vorausgefüllten Text nutzen.
+- **Auf dem Handy zeigen:** `Start IFSD Hub (Handy).command` (oder `python3 server.py --lan`) starten, die angezeigte Adresse im selben WLAN auf dem Handy öffnen. Die Sprachaufnahme geht nur am Laptop.

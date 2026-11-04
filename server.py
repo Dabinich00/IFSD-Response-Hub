@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import socket
+import sys
 import tempfile
 import threading
 import time
@@ -18,7 +20,8 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-HOST = "127.0.0.1"
+# Local only by default. `python3 server.py --lan` also serves phones/tablets in the same Wi-Fi.
+HOST = "0.0.0.0" if "--lan" in sys.argv or os.environ.get("IFSD_LAN") == "1" else "127.0.0.1"
 PORT = int(os.environ.get("IFSD_PORT", "8000"))
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
 MODEL_NAME = os.environ.get("WHISPER_MODEL", "base")
@@ -251,6 +254,14 @@ class IFSDHandler(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     os.chdir(Path(__file__).resolve().parent)
     database.initialize()
-    print(f"IFSD Response Hub: http://{HOST}:{PORT}")
+    print(f"IFSD Response Hub: http://127.0.0.1:{PORT}")
+    if HOST == "0.0.0.0":
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+                probe.connect(("192.0.2.1", 80))
+                lan_ip = probe.getsockname()[0]
+        except OSError:
+            lan_ip = "<this computer's IP>"
+        print(f"On a phone in the same Wi-Fi: http://{lan_ip}:{PORT}  (voice recording needs the laptop)")
     print(f"Whisper model: {MODEL_NAME} (first use downloads the model)")
     ThreadingHTTPServer((HOST, PORT), IFSDHandler).serve_forever()
