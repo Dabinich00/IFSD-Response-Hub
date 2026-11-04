@@ -354,12 +354,12 @@ async function loadCases(){
   status.textContent=records.length?`${records.length} case(s)`:'No cases found.';
   container.replaceChildren();
   for(const record of records){
-   const card=document.createElement('article');
-   const title=document.createElement('h3');title.textContent=record.caseId;
-   const detail=document.createElement('p');detail.textContent=[record.customer||'Customer unknown',record.aircraftId||'Aircraft unknown',record.aircraftLocation||'Location unknown',record.priority||'Pending'].join(' · ');
-   const notes=document.createElement('p');notes.textContent=record.problemNotes;
+   const card=document.createElement('article');card.className='saved-case-row';
+   const title=document.createElement('h3');title.textContent=record.caseId;title.title=record.caseId;
+   const detail=document.createElement('p');detail.className='saved-case-detail';detail.textContent=[record.customer||'Customer unknown',record.aircraftId||'Aircraft unknown',record.aircraftLocation||'Location unknown',record.priority||'Pending'].join(' · ');detail.title=detail.textContent;
+   const notes=document.createElement('p');notes.className='saved-case-notes';notes.textContent=record.problemNotes;notes.title=record.problemNotes;
    const actions=document.createElement('div');actions.className='case-actions';
-   const open=document.createElement('button');open.textContent=record.deletedAt?'Restore':'Open';
+   const open=document.createElement('button');open.textContent=record.deletedAt?'Restore':'Edit';
    open.onclick=async()=>{
     if(extractionBusy||caseSaving)return;
     if(!record.deletedAt&&!canReplaceCase())return;
