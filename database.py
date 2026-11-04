@@ -11,6 +11,12 @@ FIELDS = ('source', 'customer', 'aircraftId', 'aircraftLocation', 'priority',
           'problemNotes', 'assistantSuggestions', 'originalText')
 PRIORITIES = ('', 'Pending', '1 - Most urgent', '2 - Urgent', '3 - Medium',
               '4 - Low', '5 - Lowest')
+# Human-in-the-loop decision recorded by an authorized expert in the response
+# workspace. Kept separate from the intake FIELDS so fixtures stay unchanged.
+DECISION_FIELDS = ('decision', 'decisionBy', 'decisionNote', 'assignedResources', 'decidedAt')
+DECISIONS = ('', 'approve-plan', 'request-information', 'escalate-engineering', 'monitor-only')
+ALL_FIELDS = FIELDS + DECISION_FIELDS
+SCHEMA_VERSION = 2
 
 class ConflictError(Exception):
     pass
@@ -58,8 +64,13 @@ def initialize():
             snapshot TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS incidents_deleted ON incidents(deletedAt);
-        PRAGMA user_version = 1;
         ''')
+        # Schema v2: add decision columns to existing databases without losing data.
+        existing = {row['name'] for row in db.execute('PRAGMA table_info(incidents)')}
+        for field in DECISION_FIELDS:
+            if field not in existing:
+                db.execute(f"ALTER TABLE incidents ADD COLUMN {field} TEXT NOT NULL DEFAULT ''")
+        db.execute(f'PRAGMA user_version = {SCHEMA_VERSION}')
 
 def now():
     return datetime.now(timezone.utc).isoformat(timespec='microseconds')
@@ -68,9 +79,9 @@ def validate(payload):
     if not isinstance(payload, dict):
         raise ValueError('Case must be a JSON object.')
     result = {}
-    for field in FIELDS:
+    for field in ALL_FIELDS:
         value = payload.get(field, '')
-        limit = 50000 if field in ('originalText', 'problemNotes', 'assistantSuggestions') else 500
+        limit = 50000 if field in ('originalText', 'problemNotes', 'assistantSuggestions', 'decisionNote') else 500
         if not isinstance(value, str) or len(value) > limit:
             raise ValueError(f'{field}: expected text, maximum {limit} characters.')
         result[field] = value.strip()
@@ -80,6 +91,10 @@ def validate(payload):
         raise ValueError('Problem / Notes is required before saving.')
     if result['priority'] not in PRIORITIES:
         raise ValueError('Invalid priority.')
+    if result['decision'] not in DECISIONS:
+        raise ValueError('Invalid expert decision.')
+    if result['decision'] and not result['decisionBy']:
+        raise ValueError('An expert decision requires the name of the deciding expert.')
     return result
 
 def history(db, row, action):
@@ -90,8 +105,8 @@ def create(payload):
     values = validate(payload)
     stamp = now()
     with connection() as db:
-        columns = ', '.join(FIELDS)
-        placeholders = ', '.join('?' for _ in FIELDS)
+        columns = ', '.join(ALL_FIELDS)
+        placeholders = ', '.join('?' for _ in ALL_FIELDS)
         cursor = db.execute(f'INSERT INTO incidents ({columns}, createdAt, updatedAt) VALUES ({placeholders}, ?, ?)',
                             (*values.values(), stamp, stamp))
         number = cursor.lastrowid
@@ -111,8 +126,8 @@ def get(case_id):
 def list_cases(query='', deleted=False):
     with connection() as db:
         rows = db.execute('''SELECT caseId, source, customer, aircraftId, aircraftLocation,
-            priority, eventTime, substr(problemNotes, 1, 160) AS problemNotes,
-            createdAt, updatedAt, deletedAt, revision FROM incidents
+            priority, eventTime, requestedDepartureDate, engine1, engine2, substr(problemNotes, 1, 160) AS problemNotes,
+            decision, createdAt, updatedAt, deletedAt, revision FROM incidents
             WHERE (deletedAt IS NOT NULL) = ? AND
             instr(lower(caseId || ' ' || customer || ' ' || aircraftId || ' ' ||
             aircraftLocation || ' ' || problemNotes), lower(?)) > 0 ORDER BY id DESC''',
@@ -134,7 +149,7 @@ def change(case_id, payload, action='updated'):
             raise ConflictError('Restore this case before editing.')
         stamp = now()
         if values is not None:
-            assignments = ', '.join(f'{key} = ?' for key in FIELDS)
+            assignments = ', '.join(f'{key} = ?' for key in ALL_FIELDS)
             db.execute(f'UPDATE incidents SET {assignments}, updatedAt = ?, revision = revision + 1 WHERE caseId = ?',
                        (*values.values(), stamp, case_id))
         else:

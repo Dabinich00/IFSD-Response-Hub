@@ -3,8 +3,9 @@ let currentCase=null;
 let caseDirty=false;
 let caseSaving=false;
 
-function show(id){views.forEach(v=>v.classList.remove('active'));nav.forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');nav.find(b=>b.dataset.view===id)?.classList.add('active')}
+function show(id){views.forEach(v=>v.classList.remove('active'));nav.forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');nav.find(b=>b.dataset.view===id)?.classList.add('active');if(typeof onViewShown==='function')onViewShown(id)}
 nav.forEach(b=>b.onclick=()=>{show(b.dataset.view);if(b.dataset.view==='cases')loadCases()});
+document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.open)));
 document.querySelectorAll('.tabs button').forEach((b,index)=>{if(index===0)b.classList.add('active');b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active')}});
 
 const fields=[
@@ -109,6 +110,7 @@ document.getElementById('extract').onclick=()=>{
  document.getElementById('intake').classList.add('case-created');
  syncDashboard(data,sourceText);
  document.getElementById('toResponse').disabled=false;
+ document.getElementById('toAnalysis').disabled=false;
 };
 
 function extractCase(text,activeTab){
@@ -147,6 +149,8 @@ function extractEventDateTime(text){
 }
 
 function extractAircraftLocation(text){
+ const labelled=(text.match(/\bAircraft location:\s*([^\n\r]+)/i)||[])[1];
+ if(labelled)return labelled.trim();
  const diverted=(text.match(/\bdiverted to\s+([A-Za-z -]+?)(?:\.|,| and|$)/i)||[])[1];
  const onGround=(text.match(/\b(?:on ground|located|currently)\s+(?:in|at|there\s*in)?\s*([A-Za-z -]+?)(?:\.|,| and|$)/i)||[])[1];
  return (diverted||onGround||'').trim();
@@ -160,7 +164,9 @@ function normalizeCustomer(value){
 }
 
 function extractProblemNotes(text){
- const sentences=text.split(/(?<=[.!?])\s+/).filter(Boolean);
+ // Ignore header lines ("Customer: …", "Subject: …", dataset markers) so they are not merged into the notes.
+ const body=text.split(/\r?\n/).filter(line=>!/^\s*(\[[^\]]+\]|(Subject|From|To|Date|Customer|Aircraft(?: ID| location)?|Registration|Tail(?: number)?|Engine\s*[12](?:\s*Number)?|Event time|Requested departure|Call transcript):)/i.test(line)).join(' ');
+ const sentences=body.split(/(?<=[.!?])\s+/).filter(Boolean);
  const relevant=sentences.filter(s=>/\b(shutdown|IFSD|vibration|EGT|oil|failure|failed|AOG|ground)\b/i.test(s));
  return (relevant.slice(0,2).join(' ')||sentences[0]||'').trim();
 }
@@ -231,18 +237,18 @@ function syncDashboard(data,sourceText){
  text('dashboardSyncStatus',`Synced from intake · ${data.aircraftId||'Aircraft ID open'}`);
  text('dashboardNotes',sourceText.length>150?`${sourceText.slice(0,147)}…`:sourceText);
  document.getElementById('dashboardLevel').classList.toggle('review',!String(data.priority).startsWith('1'));
+ if(typeof renderDashboardExtras==='function')renderDashboardExtras(data);
 }
 
 function escapeHtml(value){
  return String(value).replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character]));
 }
 
-const dashboardClock=document.getElementById('dashboardClock');
 function updateDashboardClock(){
  const now=new Date();
  const time=now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
  const date=now.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
- dashboardClock.textContent=`${time}  ${date}`;
+ document.querySelectorAll('.js-clock').forEach(clock=>clock.textContent=`${time}  ${date}`);
 }
 updateDashboardClock();
 setInterval(updateDashboardClock,30000);
@@ -273,6 +279,7 @@ function openCase(data){
  document.getElementById('sourceText').value=data.originalText||'';
  document.getElementById('intake').classList.add('case-created');
  document.getElementById('toResponse').disabled=false;
+ document.getElementById('toAnalysis').disabled=false;
  document.getElementById('saveStatus').textContent=data.caseId?`Loaded ${data.caseId}. Changes require Save Case.`:'New case. ID will be assigned when saving.';
  syncDashboard(data,data.originalText||'');
  show('intake');
@@ -301,6 +308,7 @@ document.getElementById('toResponse').onclick=async()=>{
   renderCase(currentCase);renderAlerts(currentCase);
   syncDashboard(currentCase,currentCase.originalText||'');
   status.textContent=`Saved ${currentCase.caseId}`;
+  if(typeof onCaseSaved==='function')onCaseSaved(currentCase);
  }catch(error){status.textContent=`Save not confirmed: ${error.message} If the connection failed, check Saved Cases before retrying to avoid a duplicate.`}
  finally{
   caseSaving=false;
@@ -340,6 +348,11 @@ async function loadCases(){
     finally{open.disabled=false}
    };
    actions.append(open);
+   if(!record.deletedAt&&typeof openCaseInResponse==='function'){
+    const respond=document.createElement('button');respond.textContent='Response →';
+    respond.onclick=()=>openCaseInResponse(record.caseId);
+    actions.append(respond);
+   }
    if(!record.deletedAt){
     const remove=document.createElement('button');remove.textContent='Move to trash';
     remove.onclick=async()=>{
@@ -349,8 +362,9 @@ async function loadCases(){
      remove.disabled=true;
      try{
       await caseRequest(`/${encodeURIComponent(record.caseId)}`,'DELETE',{revision:record.revision});
-      if(currentCase?.caseId===record.caseId){currentCase=null;caseDirty=false;document.getElementById('fields').replaceChildren();document.getElementById('toResponse').disabled=true;document.getElementById('saveStatus').textContent='Case moved to trash.';}
+      if(currentCase?.caseId===record.caseId){currentCase=null;caseDirty=false;document.getElementById('fields').replaceChildren();document.getElementById('toResponse').disabled=true;document.getElementById('toAnalysis').disabled=true;document.getElementById('saveStatus').textContent='Case moved to trash.';}
       await loadCases();
+      if(typeof onCaseSaved==='function')onCaseSaved(null);
      }catch(error){status.textContent=error.message}
      finally{remove.disabled=false}
     };

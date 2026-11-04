@@ -3,21 +3,52 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IFSD Response Hub</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header><h1>IFSD Response Hub</h1><p>Team 3 – In-Flight Shutdown · Prototype v0.2</p></header>
+<header><h1>IFSD Response Hub</h1><p>Team 3 – In-Flight Shutdown · Prototype v0.3</p></header>
 <nav>
-<button data-view="dashboard" class="active">Dashboard</button>
+<button data-view="overview" class="active">Overview</button>
+<button data-view="dashboard">Incident Dashboard</button>
 <button data-view="intake">1 · Intelligent Incident Intake</button>
 <button data-view="response">2 · Incident Response & Resource Intelligence</button>
 <button data-view="cases">Saved Cases</button>
 </nav>
 
 <main>
+<section id="overview" class="view active">
+  <div class="overview-head">
+    <div><span class="eyebrow">Operations Control</span><h2>Overview</h2></div>
+    <div class="dashboard-time"><span>Local time</span><time class="js-clock" aria-live="off"></time></div>
+  </div>
+
+  <p class="overview-notice"><b>DEMO / MOCK DATA</b> · Concept prototype · Cases come from the local database · Resources, ETAs and EHM indicators are demo values · Human-in-the-loop: final decisions remain with authorized experts.</p>
+  <p class="overview-empty" id="overviewEmpty" hidden></p>
+
+  <div class="world-map" aria-label="Geo Resource Map with saved cases, teams and parts" role="region">
+    <div id="dashMap"></div>
+    <div class="map-weather" aria-hidden="true"></div>
+    <div class="map-legend" aria-label="Legend"><span><i class="dot p1"></i>Priority 1</span><span><i class="dot p2"></i>Priority 2</span><span><i class="dot p3"></i>Priority 3</span><span><i class="dot p4"></i>Priority 4–5</span><span><i class="dot p0"></i>Pending</span><span><i class="triangle"></i>Parts</span><span><i class="diamond"></i>Teams</span></div>
+  </div>
+
+  <div class="overview-bottom">
+    <article class="overview-card metric-card"><span>Active cases</span><strong id="statActive">–</strong><small>Open expert decisions</small><b id="statOpen">–</b></article>
+    <article class="overview-card"><span>Priority levels</span><ul class="priority-list" id="priorityList"></ul></article>
+    <article class="overview-card recommendations" id="recoList"><span>Recommendations</span></article>
+    <aside class="overview-actions">
+      <label><input type="checkbox" checked data-layer="case"><i></i><span>Cases</span></label>
+      <label><input type="checkbox" checked data-layer="team,part"><i></i><span>Teams and parts</span></label>
+      <label><input type="checkbox" data-layer="weather"><i></i><span>Weather (demo)</span></label>
+      <button type="button" data-open="intake">New incident <span>→</span></button>
+    </aside>
+  </div>
+</section>
+
 <section id="cases" class="view">
   <h2>Saved Cases</h2>
-  <p>Locally saved incident records. Open a case to review or edit its fields.</p>
+  <p>Locally saved incident records. Open a case to review or edit its fields, or go straight to the response workspace.</p>
   <div class="case-controls">
     <label>Search <input id="caseSearch" type="search" placeholder="Case ID, customer, aircraft, location or problem"></label>
     <label>Show <select id="caseFilter"><option value="0">Active cases</option><option value="1">Trash</option></select></label>
@@ -27,64 +58,65 @@
   <p id="caseListStatus" role="status"></p>
   <div id="caseList" class="saved-case-list"></div>
 </section>
-<section id="dashboard" class="view active">
+
+<section id="dashboard" class="view">
   <div class="dashboard-head">
     <div><span class="eyebrow">Operations Control</span><h2>Incident Dashboard</h2></div>
-    <div class="dashboard-time"><span>Local time</span><time id="dashboardClock" aria-live="off">10:01&nbsp;&nbsp;03.09.2026</time></div>
+    <div class="dashboard-time"><span>Local time</span><time id="dashboardClock" class="js-clock" aria-live="off"></time></div>
   </div>
-  <button class="back-button" type="button" aria-label="Zurück">◀</button>
+  <button class="back-button" type="button" aria-label="Back to overview" data-open="overview">◀</button>
 
-  <div class="case-board" aria-label="Aktiver Demo-Case">
-    <div class="case-table" role="table" aria-label="Case-Übersicht">
+  <div class="case-board" aria-label="Selected case">
+    <div class="case-table" role="table" aria-label="Case summary">
       <div class="case-row case-header" role="row">
-        <b role="columnheader">Counter</b><b role="columnheader">Case</b><b role="columnheader">Trip</b>
-        <b role="columnheader">Type</b><b role="columnheader">Customer</b><b role="columnheader">Problem</b><b role="columnheader">Level</b>
+        <b role="columnheader">Counter</b><b role="columnheader">Case</b><b role="columnheader">Location</b>
+        <b role="columnheader">Engine</b><b role="columnheader">Customer</b><b role="columnheader">Problem</b><b role="columnheader">Level</b>
       </div>
       <div class="case-row case-data" role="row">
-        <span role="cell" id="dashboardCounter">001</span><span role="cell" id="dashboardCase">0309-001</span><span role="cell" id="dashboardTrip">BER → MUC</span>
-        <span role="cell" id="dashboardType">Trent 1000</span><span role="cell" id="dashboardCustomer">LHA</span><span role="cell" id="dashboardProblem">Fatal Bird Strike</span><span role="cell" id="dashboardLevel" class="level-pill">1</span>
+        <span role="cell" id="dashboardCounter">—</span><span role="cell" id="dashboardCase">No case</span><span role="cell" id="dashboardTrip">—</span>
+        <span role="cell" id="dashboardType">—</span><span role="cell" id="dashboardCustomer">—</span><span role="cell" id="dashboardProblem">Select a case</span><span role="cell" id="dashboardLevel" class="level-pill review">?</span>
       </div>
     </div>
 
-    <p class="demo-label"><span>DEMO DATA</span><strong id="dashboardSyncStatus">Example case</strong> · Human-in-the-loop · Entscheidung durch autorisierte Experten</p>
+    <p class="demo-label"><span>DEMO DATA</span><strong id="dashboardSyncStatus">Select a case on the Overview map or create one in Intake</strong> · Human-in-the-loop · Decision by authorized experts <button type="button" class="dash-to-response" data-open="response">Response &amp; resources →</button></p>
     <div class="dashboard-grid">
       <article class="dashboard-tile visualisation-tile">
         <div class="tile-heading"><span>01</span><h3>Visualisation</h3></div>
-        <div class="engine-visual" role="img" aria-label="Schematische Darstellung einer beschädigten Triebwerksschaufel">
+        <div class="engine-visual" role="img" aria-label="Schematic engine with highlighted problem area">
           <div class="engine-core"></div>
-          <div class="engine-damage">!</div>
+          <div class="engine-damage" id="dashboardSymptom">!</div>
         </div>
       </article>
 
       <article class="dashboard-tile notes-tile">
         <div class="tile-heading"><span>02</span><h3>Notes</h3></div>
-        <p id="dashboardNotes">Bad impact at 3000 ft<br>at 132 knots,<br>climbing angle 32°</p>
+        <p id="dashboardNotes">No case selected yet.</p>
       </article>
 
       <article class="dashboard-tile weather-tile">
-        <div class="tile-heading"><span>03</span><h3>Weather</h3></div>
-        <div class="weather-map" role="img" aria-label="Schematische Wetterkarte">
+        <div class="tile-heading"><span>03</span><h3>Weather <small class="src">Demo</small></h3></div>
+        <div class="weather-map" role="img" aria-label="Schematic weather at aircraft location">
           <span class="cloud cloud-one"></span><span class="cloud cloud-two"></span><span class="cloud cloud-three"></span>
-          <i class="route-line"></i><b class="route-origin">BER</b><b class="route-destination">MUC</b>
+          <i class="route-line"></i><b class="route-origin" id="wxLocation">—</b><b class="route-destination" id="wxText">—</b>
         </div>
       </article>
 
       <article class="dashboard-tile team-tile">
         <div class="tile-heading"><span>04</span><h3>Solving/Team</h3></div>
-        <p><b>Action:</b> Part replacement</p>
-        <p><b>Field Service:</b> Thomas, Paul</p>
-        <button type="button">Historical Aircraft Events <span>▶</span></button>
+        <p><b>Action:</b> <span id="dashboardAction">—</span></p>
+        <p><b>Field Service:</b> <span id="dashboardField">—</span></p>
+        <button type="button" id="dashboardHistory">Similar historical events <span>▶</span></button>
       </article>
 
       <article class="dashboard-tile parts-tile">
-        <div class="tile-heading"><span>05</span><h3>Spare Parts</h3></div>
-        <p>Heatshield<br>Blades</p>
+        <div class="tile-heading"><span>05</span><h3>Spare Parts <small class="src">Demo</small></h3></div>
+        <p id="dashboardParts">—</p>
       </article>
 
       <article class="dashboard-tile flight-tile">
-        <div class="tile-heading"><span>06</span><h3>Flighttrip</h3></div>
-        <div class="flight-map" role="img" aria-label="Schematische Flugroute Berlin nach München">
-          <span class="airport airport-ber route-origin">BER</span><span class="plane">✈</span><span class="airport airport-muc route-destination">MUC</span>
+        <div class="tile-heading"><span>06</span><h3>Aircraft</h3></div>
+        <div class="flight-map" role="img" aria-label="Aircraft and location">
+          <span class="airport airport-ber route-origin" id="apAircraft">—</span><span class="plane">✈</span><span class="airport airport-muc route-destination" id="apLocation">—</span>
           <i></i>
         </div>
       </article>
@@ -118,16 +150,16 @@
         <p class="recorder-note">Audio is sent only to the locally running Whisper service.</p>
       </section>
       <label>Incoming Email / Transcript</label>
-      <textarea id="sourceText">Subject: AOG support request - Lufthansa aircraft D-AIXP
+      <textarea id="sourceText">Subject: AOG support request - Demo Northstar Air aircraft DEMO-AC-017
 
-Customer: Lufthansa
-Aircraft ID: D-AIXP
-Engine 1 Number: ENG-1000-77142
-Engine 2 Number: ENG-1000-88409
+Customer: Demo Northstar Air
+Aircraft ID: DEMO-AC-017
+Engine 1 Number: DEMO-ENG-01733
+Engine 2 Number: DEMO-ENG-01734
 
-During flight LH412 the crew reported an engine shutdown on 2026-09-03 at 09:42 UTC. Engine 2 was shut down after increased vibration and EGT rise. The aircraft diverted to Shannon and is currently on ground there.
+During flight DNA412 the crew reported an engine shutdown on {{TODAY}} at 09:42 UTC. Engine 2 was shut down after increased vibration and EGT rise. The aircraft diverted to Shannon and is currently on ground there.
 
-The customer requests the aircraft to depart again on 2026-09-04 at 08:00 UTC. Oil system details and the complete EHM dataset are not available yet.</textarea>
+The customer requests the aircraft to depart again on {{TOMORROW}} at 08:00 UTC. Oil system details and the complete EHM dataset are not available yet.</textarea>
       <button id="extract">Create case automatically</button>
     </article>
     <article id="intakeResult">
@@ -139,39 +171,66 @@ The customer requests the aircraft to depart again on 2026-09-04 at 08:00 UTC. O
         <summary><span>Original Email / Transcript</span><small>Open for manual verification</small></summary>
         <textarea id="originalText" class="source-record" readonly>No extraction yet.</textarea>
       </details>
-      <button id="toResponse" disabled>Save Case</button>
+      <div class="intake-actions">
+        <button id="toResponse" disabled>Save Case</button>
+        <button id="toAnalysis" type="button" class="next-btn" disabled>Analysis &amp; resources →</button>
+      </div>
       <p id="saveStatus" role="status" aria-live="polite"></p>
     </article>
   </div>
 </section>
 
 <section id="response" class="view">
-  <h2>2 · Incident Response & Resource Intelligence</h2>
+  <div class="response-head">
+    <div><span class="eyebrow">2 · Incident Response &amp; Resource Intelligence</span><h2 id="respTitle">No case selected</h2><p id="respMeta" class="resp-meta">Create a case in Intake or pick a marker on the Overview map.</p></div>
+    <span class="resp-priority" id="respPriority">–</span>
+  </div>
   <div class="cards three">
-    <article><b>EHM / Sensorik</b><p>EGT <span class="red">↑ 14%</span></p><p>Vibration <span class="red">hoch</span></p><p>Oil Pressure: normal*</p></article>
-    <article><b>Case Completeness</b><strong id="completenessValue">82%</strong><div id="responseMissing"><p>Ölstand fehlt</p><p>EHM-Datensatz fehlt</p><p>Crew Statement unbestätigt</p></div></article>
-    <article><b>Ähnliche Fälle</b><p>2025-041 · 76%</p><p>2024-118 · 61%</p><p>2023-302 · 53%</p></article>
+    <article><b>EHM / Sensor indicators <small class="src">Demo · from report</small></b><div id="respEhm"><p>–</p></div></article>
+    <article><b>Case Completeness</b><strong id="respCompleteness">–</strong><div id="respMissing"><p>–</p></div></article>
+    <article><b>Similar cases <small class="src">Saved cases</small></b><div id="respSimilar"><p>–</p></div></article>
   </div>
   <div class="two">
     <article>
-      <h3>Geo Resource Map</h3>
-      <div class="map">
-        <div class="event">! IFSD Event</div>
-        <div class="r1">● Shannon<br><small>2 Engineers · Parts</small></div>
-        <div class="r2">● London<br><small>4 Engineers</small></div>
-        <div class="r3">● Dahlewitz<br><small>Specialist Team</small></div>
-      </div>
+      <h3>Geo Resource Map <small class="src">Demo resources</small></h3>
+      <div id="respMap" class="resp-map"></div>
     </article>
     <article>
-      <h3>Empfohlene Ressourcen</h3>
-      <p><b>Shannon Service Partner</b><br>ETA 35 min</p>
-      <p><b>RR Specialist – Trent 1000</b><br>Remote Support · sofort</p>
-      <p><b>Replacement Part Kit</b><br>Warehouse London · ETA 3h 20m</p>
-      <div class="note"><b>Human-in-the-loop</b><br>Das System strukturiert Daten und macht Vorschläge. Die sicherheitskritische Entscheidung bleibt beim autorisierten Experten.</div>
+      <h3>Recommended resources</h3>
+      <p class="hint">Suggestions only. Select the resources you want to assign.</p>
+      <div id="respResources"><p>–</p></div>
+      <h3>Suggested next steps</h3>
+      <ol id="respSteps" class="steps"><li>–</li></ol>
     </article>
   </div>
+  <article class="decision" id="decisionPanel">
+    <div class="decision-head">
+      <div><h3>Expert decision</h3><p>Human-in-the-loop: the system structures data and makes suggestions. The safety-critical decision is taken and recorded by an authorized expert.</p></div>
+      <span class="decision-state" id="decisionState">Open</span>
+    </div>
+    <div class="decision-grid">
+      <fieldset class="decision-options">
+        <legend>Decision</legend>
+        <label><input type="radio" name="decision" value="approve-plan"><span><b>Approve response plan</b><small>Dispatch the selected resources</small></span></label>
+        <label><input type="radio" name="decision" value="request-information"><span><b>Request missing information</b><small>Send a follow-up before deciding</small></span></label>
+        <label><input type="radio" name="decision" value="escalate-engineering"><span><b>Escalate to engineering</b><small>Specialist review required</small></span></label>
+        <label><input type="radio" name="decision" value="monitor-only"><span><b>Monitor only</b><small>No dispatch for now</small></span></label>
+      </fieldset>
+      <div class="decision-fields">
+        <label>Authorized expert *<input id="decisionBy" placeholder="Name / role"></label>
+        <label>Rationale<textarea id="decisionNote" rows="3" placeholder="Why this decision?"></textarea></label>
+        <div id="followupBox" hidden>
+          <label>Generated follow-up request<textarea id="followupText" rows="6"></textarea></label>
+          <button type="button" id="copyFollowup" class="ghost-btn">Copy request</button>
+        </div>
+        <button type="button" id="saveDecision">Record decision</button>
+        <p id="decisionStatus" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </article>
 </section>
 </main>
 
 <script src="app.js"></script>
+<script src="overview.js"></script>
 </body></html>

@@ -46,7 +46,15 @@ The default multilingual `base` model is downloaded on first use. Select another
 
 ## Current status
 
-**Prototype v0.2** combines the static demonstrator with an optional local faster-whisper service. It includes editable case fields, follow-up requests and synchronized dashboard data.
+**Prototype v0.3** connects all screens to the local case database:
+
+- **Overview** – world map (Leaflet + OpenStreetMap) with every saved case, coloured by priority, plus demo field-service hubs and parts warehouses; live KPIs and recommendations.
+- **Incident Dashboard** – per-case operational view (location, engine, action, field service, spare parts, weather).
+- **Intake** – email / phone transcript → structured, editable case → saved with a server-assigned ID.
+- **Response & Resource Intelligence** – EHM indicators derived from the report, case completeness, similar saved cases (symptoms, aircraft, engine), Geo Resource Map, recommended resources with ETA and suggested next steps.
+- **Expert decision (human-in-the-loop)** – the authorized expert selects resources, chooses *approve plan / request information / escalate / monitor*, adds a rationale and records it. The decision is stored with the case and in its history. A follow-up request for missing information is generated on demand.
+
+The map needs an internet connection; without it a notice is shown and everything else keeps working. See [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) for the end-to-end demo.
 
 See [`PROJECT_BRIEF.md`](PROJECT_BRIEF.md) for the product context and [`BACKLOG.md`](BACKLOG.md) for planned work.
 
@@ -54,8 +62,12 @@ See [`PROJECT_BRIEF.md`](PROJECT_BRIEF.md) for the product context and [`BACKLOG
 
 - `index.html` – application screens and demo content
 - `styles.css` – responsive visual styling
-- `app.js` – navigation and rule-based demo extraction
-- `server.py` – local static server and faster-whisper API
+- `app.js` – navigation, intake extraction, case persistence and saved-case list
+- `overview.js` – overview map, dashboard enrichment, response workspace and expert decision
+- `DEMO_SCRIPT.md` – end-to-end presentation script
+- `server.py` – local static server, case API and faster-whisper API
+- `database.py` – SQLite schema, migrations and persistence
+- `seed_demo_cases.py` / `examples/` – 50 synthetic demo incidents
 - `requirements.txt` – optional speech-to-text dependency
 - `PROJECT_BRIEF.md` – challenge and product concept
 - `BACKLOG.md` – prioritized product backlog
@@ -95,9 +107,13 @@ Restart an already running server and reload the browser after updating the code
   overwriting a newer edit in another window.
 - `incident_history` stores snapshots on create, update, trash and restore.
 - The database starts empty. No fictional incidents are inserted automatically.
+  For the demo, load the 50 synthetic cases once with `python3 seed_demo_cases.py`.
+- Expert decisions (`decision`, `decisionBy`, `decisionNote`, `assignedResources`,
+  `decidedAt`) are stored with the case. Existing databases are migrated
+  automatically to schema version 2 on server start; no data is lost.
 
 The `data/` directory is excluded from Git and is never served as a static web
-asset. Only index.html, app.js and styles.css are publicly served. This remains a
+asset. Only index.html, app.js, overview.js and styles.css are publicly served. This remains a
 local application bound to 127.0.0.1, without multi-user authentication.
 
 For a simple backup, stop the server and copy the entire `data/` directory to a
@@ -110,6 +126,7 @@ Run checks with:
 ```powershell
 .\.venv\Scripts\python.exe -m unittest test_database -v
 node --check app.js
+node --check overview.js
 ```
 
 Database tests use temporary databases and do not write demo records into the
