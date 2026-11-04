@@ -102,6 +102,16 @@ ATA = {'vibration':'77-30 Engine vibration indicating','oil-pressure':'79-30 Oil
        'fuel-system':'73-00 Engine fuel and control','indication-disagreement':'77-00 Engine indicating',
        'smoke-odour':'26-10 Fire detection / 79 oil','flameout-restart':'74-00 Ignition'}
 LOC_WEIGHTS = [5,9,8,4,7,4,3,4,3,3]  # LHR and FRA hubs see the most events
+ROOT_CAUSES = {'vibration':['Fan blade erosion, blade set replaced','Vibration pick-up connector loose, re-terminated'],
+  'oil-pressure':['Oil pressure transmitter failed, replaced','Oil filter bypass, filter changed'],
+  'oil-consumption':['Bearing seal wear, engine removed for shop visit','Oil tank cap seal damaged, replaced'],
+  'high-egt':['Thermocouple harness chafed, replaced','HPT blade deterioration, borescope follow-up scheduled'],
+  'compressor-surge':['Variable stator vane actuator fault, actuator replaced'],
+  'bird-strike':['Bird ingestion, fan blade blended within limits','No damage found after inspection'],
+  'fuel-system':['Fuel metering unit fault, unit replaced'],
+  'indication-disagreement':['EGT sensor fault, sensor replaced','Software indication fault, no engine defect'],
+  'smoke-odour':['Oil leak into bleed air, seal replaced','Cabin odour not engine related (APU)'],
+  'flameout-restart':['Ice crystal icing event, no hardware fault','Igniter plug worn, replaced']}
 CLUSTERS = [('DEMO-AC-003','oil-consumption',[4,11,19]),('DEMO-AC-007','vibration',[6,23]),('DEMO-AC-012','smoke-odour',[2,9])]
 
 
@@ -168,6 +178,19 @@ def build_records(now=None):
         header += '\n'.join(f'{label}: {row[key]}' for key, label in labels.items() if row[key])
         header += f'\nAircraft type: {ac[1]}\nEngine type: {ac[2]}\nFlight phase: {phase_of(description)}\nATA chapter: {ATA[family]}'
         row['originalText'] = header + '\n\n' + description + ' ' + context
+        # Lifecycle: older events are mostly closed with a confirmed root cause, recent ones are still open.
+        in_flight = days_ago == 0 and rng.random() < .5
+        if days_ago > 14 and rng.random() < .8:
+            decided = event + timedelta(hours=rng.uniform(.5, 6))
+            row.update(status='Closed', rootCause=rng.choice(ROOT_CAUSES[family]), decision='approve-plan',
+                       decisionBy='Demo Duty Engineer', decidedAt=decided.isoformat(),
+                       closedAt=(decided + timedelta(hours=rng.uniform(6, 72))).isoformat(),
+                       assignedResources='Demo Service Partner; Demo Parts Warehouse')
+        else:
+            row['status'] = 'In flight' if in_flight else rng.choice(['On ground', 'On ground', 'Inspection', 'Repair'])
+            if rng.random() < .4 and not in_flight:
+                row.update(decision=rng.choice(['approve-plan', 'request-information', 'escalate-engineering']),
+                           decisionBy='Demo Duty Engineer', decidedAt=(event + timedelta(hours=rng.uniform(.5, 8))).isoformat())
         records.append({'demoKey': f'{DATASET}:{number:03d}', 'similarityFamily': family, 'case': row})
     return records
 

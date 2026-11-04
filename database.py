@@ -15,8 +15,12 @@ PRIORITIES = ('', 'Pending', '1 - Most urgent', '2 - Urgent', '3 - Medium',
 # workspace. Kept separate from the intake FIELDS so fixtures stay unchanged.
 DECISION_FIELDS = ('decision', 'decisionBy', 'decisionNote', 'assignedResources', 'decidedAt')
 DECISIONS = ('', 'approve-plan', 'request-information', 'escalate-engineering', 'monitor-only')
-ALL_FIELDS = FIELDS + DECISION_FIELDS
-SCHEMA_VERSION = 2
+# Case lifecycle (schema v3). Closing a case records the confirmed root cause.
+LIFECYCLE_FIELDS = ('status', 'rootCause', 'closedAt')
+STATUSES = ('', 'In flight', 'On ground', 'Inspection', 'Repair', 'Closed')
+SOURCES = ('Email', 'Phone Transcript', 'EHM Alert')
+ALL_FIELDS = FIELDS + DECISION_FIELDS + LIFECYCLE_FIELDS
+SCHEMA_VERSION = 3
 
 class ConflictError(Exception):
     pass
@@ -32,14 +36,35 @@ def connection():
     finally:
         db.close()
 
+def _drop_source_check():
+    """Schema v3: older databases restrict source to Email/Phone Transcript in a CHECK
+    constraint. Rebuild the table once without it (validation now happens in Python)."""
+    if not DB_PATH.exists():
+        return
+    db = sqlite3.connect(DB_PATH, timeout=15)
+    try:
+        row = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='incidents'").fetchone()
+        if not row or 'CHECK(source IN' not in row[0]:
+            return
+        db.execute('PRAGMA foreign_keys = OFF')
+        db.execute('PRAGMA legacy_alter_table = ON')
+        with db:
+            db.execute('ALTER TABLE incidents RENAME TO incidents_v2')
+            db.execute(row[0].replace("source TEXT NOT NULL CHECK(source IN ('Email', 'Phone Transcript')),", 'source TEXT NOT NULL,'))
+            db.execute('INSERT INTO incidents SELECT * FROM incidents_v2')
+            db.execute('DROP TABLE incidents_v2')
+    finally:
+        db.close()
+
 def initialize():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    _drop_source_check()
     with connection() as db:
         db.executescript('''
         CREATE TABLE IF NOT EXISTS incidents (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             caseId TEXT UNIQUE,
-            source TEXT NOT NULL CHECK(source IN ('Email', 'Phone Transcript')),
+            source TEXT NOT NULL,
             customer TEXT NOT NULL DEFAULT '',
             aircraftId TEXT NOT NULL DEFAULT '',
             aircraftLocation TEXT NOT NULL DEFAULT '',
@@ -67,7 +92,7 @@ def initialize():
         ''')
         # Schema v2: add decision columns to existing databases without losing data.
         existing = {row['name'] for row in db.execute('PRAGMA table_info(incidents)')}
-        for field in DECISION_FIELDS:
+        for field in DECISION_FIELDS + LIFECYCLE_FIELDS:
             if field not in existing:
                 db.execute(f"ALTER TABLE incidents ADD COLUMN {field} TEXT NOT NULL DEFAULT ''")
         db.execute(f'PRAGMA user_version = {SCHEMA_VERSION}')
@@ -81,12 +106,16 @@ def validate(payload):
     result = {}
     for field in ALL_FIELDS:
         value = payload.get(field, '')
-        limit = 50000 if field in ('originalText', 'problemNotes', 'assistantSuggestions', 'decisionNote') else 500
+        limit = 50000 if field in ('originalText', 'problemNotes', 'assistantSuggestions', 'decisionNote', 'rootCause') else 500
         if not isinstance(value, str) or len(value) > limit:
             raise ValueError(f'{field}: expected text, maximum {limit} characters.')
         result[field] = value.strip()
-    if result['source'] not in ('Email', 'Phone Transcript'):
-        raise ValueError('Select Email or Phone Transcript as source.')
+    if result['source'] not in SOURCES:
+        raise ValueError('Select Email, Phone Transcript or EHM Alert as source.')
+    if result['status'] not in STATUSES:
+        raise ValueError('Invalid case status.')
+    if result['status'] == 'Closed' and not result['rootCause']:
+        raise ValueError('Closing a case requires the confirmed root cause.')
     if not result['problemNotes']:
         raise ValueError('Problem / Notes is required before saving.')
     if result['priority'] not in PRIORITIES:
@@ -130,7 +159,7 @@ def history_for(case_id):
             raise KeyError(case_id)
         rows = db.execute('''SELECT h.action, h.recordedAt, h.snapshot FROM incident_history h
             JOIN incidents i ON i.id = h.incidentId WHERE i.caseId = ? ORDER BY h.id''', (case_id,)).fetchall()
-    keep = ('priority', 'decision', 'decisionBy', 'decisionNote', 'assignedResources', 'customer', 'aircraftId',
+    keep = ('status', 'rootCause', 'priority', 'decision', 'decisionBy', 'decisionNote', 'assignedResources', 'customer', 'aircraftId',
             'aircraftLocation', 'engine1', 'engine2', 'eventTime', 'requestedDepartureDate', 'problemNotes', 'deletedAt')
     out = []
     for row in rows:
@@ -142,7 +171,7 @@ def list_cases(query='', deleted=False):
     with connection() as db:
         rows = db.execute('''SELECT caseId, source, customer, aircraftId, aircraftLocation,
             priority, eventTime, requestedDepartureDate, engine1, engine2, substr(problemNotes, 1, 160) AS problemNotes,
-            decision, createdAt, updatedAt, deletedAt, revision FROM incidents
+            decision, decidedAt, status, rootCause, closedAt, createdAt, updatedAt, deletedAt, revision FROM incidents
             WHERE (deletedAt IS NOT NULL) = ? AND
             instr(lower(caseId || ' ' || customer || ' ' || aircraftId || ' ' ||
             aircraftLocation || ' ' || problemNotes), lower(?)) > 0 ORDER BY id DESC''',

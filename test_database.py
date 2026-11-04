@@ -99,6 +99,28 @@ class DatabaseTests(unittest.TestCase):
         with database.connection() as db:
             self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], database.SCHEMA_VERSION)
 
+    def test_ehm_source_lifecycle_and_old_check_migration(self):
+        row = database.create({**self.payload, 'source': 'EHM Alert', 'status': 'In flight'})
+        self.assertEqual(row['status'], 'In flight')
+        with self.assertRaises(ValueError):
+            database.change(row['caseId'], {**row, 'status': 'Closed'})
+        closed = database.change(row['caseId'], {**row, 'status': 'Closed', 'rootCause': 'Worn bearing seal', 'closedAt': 'x'})
+        self.assertEqual(closed['rootCause'], 'Worn bearing seal')
+        # a v2 database with the old CHECK constraint is rebuilt without losing rows or history
+        with database.connection() as db:
+            db.execute('DROP TABLE incident_history'); db.execute('DROP TABLE incidents')
+            cols = ', '.join(f"{f} TEXT NOT NULL DEFAULT ''" for f in database.FIELDS + database.DECISION_FIELDS if f not in ('source', 'problemNotes'))
+            db.execute(f"""CREATE TABLE incidents (id INTEGER PRIMARY KEY AUTOINCREMENT, caseId TEXT UNIQUE,
+                source TEXT NOT NULL CHECK(source IN ('Email', 'Phone Transcript')), problemNotes TEXT NOT NULL, {cols},
+                createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL, deletedAt TEXT, revision INTEGER NOT NULL DEFAULT 1)""")
+            db.execute("INSERT INTO incidents (caseId, source, problemNotes, createdAt, updatedAt) VALUES ('OLD-2', 'Email', 'kept', 'x', 'x')")
+        database.initialize()
+        old = database.get('OLD-2')
+        self.assertEqual(old['problemNotes'], 'kept')
+        moved = database.change('OLD-2', {**{k: '' for k in database.FIELDS}, **old, 'source': 'EHM Alert', 'problemNotes': 'kept'})
+        self.assertEqual(moved['source'], 'EHM Alert')
+        self.assertEqual(len(database.history_for('OLD-2')), 1)
+
     def test_history_lists_changes_oldest_first(self):
         row = database.create(self.payload)
         database.change(row['caseId'], {**row, 'priority': '1 - Most urgent'})

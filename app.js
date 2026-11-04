@@ -6,7 +6,7 @@ let caseSaving=false;
 function show(id){views.forEach(v=>v.classList.remove('active'));nav.forEach(b=>b.classList.remove('active'));document.getElementById(id).classList.add('active');nav.find(b=>b.dataset.view===id)?.classList.add('active');if(typeof onViewShown==='function')onViewShown(id)}
 nav.forEach(b=>b.onclick=()=>{show(b.dataset.view);if(b.dataset.view==='cases')loadCases()});
 document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.open)));
-document.querySelectorAll('.tabs button').forEach((b,index)=>{if(index===0)b.classList.add('active');b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active')}});
+document.querySelectorAll('.tabs button').forEach((b,index)=>{if(index===0)b.classList.add('active');b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');const ehm=/ehm/i.test(b.textContent);document.getElementById('ehmBox').hidden=!ehm;document.querySelector('.recorder').hidden=ehm}});
 
 const fields=[
  {key:'caseId',label:'Case ID',readonly:true},
@@ -145,6 +145,8 @@ document.getElementById('extract').onclick=async()=>{
   setExtractStatus('Rule-based extraction (local AI not available)','idle');
  }finally{button.disabled=false}
  data.originalText=sourceText;
+ data.status=data.source==='EHM Alert'||/\bin flight\b|still airborne|to destination/i.test(sourceText)?'In flight':'On ground';
+ duplicateOf=typeof findDuplicate==='function'?findDuplicate(data):null;
  const suggestion=suggestPriority(data);
  data.priority=suggestion.priority;
  data.assistantSuggestions=priorityNote(suggestion)+(extractionInfo.method==='ai'?`\nFields extracted with local AI (${extractionInfo.detail}); verify against the original message.`:'');
@@ -175,7 +177,7 @@ function extractCase(text,activeTab){
   ||m(new RegExp(`\\b[Ee]ngine\\s*${n}\\s*(?:serial(?: number)?|number|no\\.?|ID|is)\\s*:?\\s*${id}`));
  return {
   caseId:'',
-  source:/phone|telefon/i.test(activeTab)?'Phone Transcript':'Email',
+  source:/ehm/i.test(activeTab)?'EHM Alert':/phone|telefon/i.test(activeTab)?'Phone Transcript':'Email',
   customer:normalizeCustomer(customer),
   aircraftId:m(/\b(?:Aircraft ID|Aircraft|Registration|Tail(?: number)?):\s*([A-Z0-9-]{4,12})\b/i)
    ||m(new RegExp(`\\b(?:[Aa]ircraft|[Rr]egistration|[Tt]ail(?: number)?|[Mm]aschine|[Ff]lugzeug|[Kk]ennzeichen)\\s+(?:is\\s+|ist\\s+)?${id}`))
@@ -195,6 +197,7 @@ function extractCase(text,activeTab){
    (requested departure). The more urgent of the two wins. It is a suggestion:
    the reviewer can change the Priority field, which is then kept. */
 let priorityManual=false;
+let duplicateOf=null;
 const PRIORITY_NAMES=['Pending','1 - Most urgent','2 - Urgent','3 - Medium','4 - Low','5 - Lowest'];
 const SEVERITY_RULES=[
  [/fire warning|engine fire|\bfire\b|feuer|brand/i,1,'fire warning reported'],
@@ -327,7 +330,7 @@ function renderCase(data){
 
 function fieldMarkup(field,value){
  const safeValue=escapeHtml(value||'');
- if(field.type==='source')return `<div class="field"><small>Source *</small><select data-case-field="source">${['Email','Phone Transcript'].map(source=>`<option${source===value?' selected':''}>${source}</option>`).join('')}</select></div>`;
+ if(field.type==='source')return `<div class="field"><small>Source *</small><select data-case-field="source">${['Email','Phone Transcript','EHM Alert'].map(source=>`<option${source===value?' selected':''}>${source}</option>`).join('')}</select></div>`;
  if(field.type==='priority'){
   const options=['Pending',...priorityLevels.filter(Boolean)].map(level=>`<option value="${escapeHtml(level)}"${level===(value||'Pending')?' selected':''}>${escapeHtml(level)}</option>`).join('');
   return `<div class="field"><small>${field.label}${field.required?' *':''}</small><select data-case-field="${field.key}">${options}</select></div>`;
@@ -346,7 +349,9 @@ function renderAlerts(data){
  if(!data.requestedDepartureDate)alerts.push('Requested departure date missing - turnaround urgency cannot be calculated');
  alerts.push('Human review required before case submission');
  alerts.push('Saving requires Source and Problem / Notes. Other missing details can be added later.');
- document.getElementById('missing').innerHTML=why+alerts.map(alert=>`<div class="miss">⚠ ${escapeHtml(alert)}</div>`).join('');
+ const dup=duplicateOf&&!data.caseId?`<div class="dup"><b>Possible duplicate of ${escapeHtml(duplicateOf.caseId)}</b><span>Same aircraft ${escapeHtml(duplicateOf.aircraftId)}, event ${escapeHtml(duplicateOf.eventTime||'date open')}, status ${escapeHtml(duplicateOf.status||'open')}.</span><button type="button" class="btn-secondary" id="mergeCase">Add this message to ${escapeHtml(duplicateOf.caseId)}</button></div>`:'';
+ document.getElementById('missing').innerHTML=dup+why+alerts.map(alert=>`<div class="miss">⚠ ${escapeHtml(alert)}</div>`).join('');
+ const merge=document.getElementById('mergeCase');if(merge&&typeof mergeIntoCase==='function')merge.onclick=()=>mergeIntoCase(duplicateOf.caseId);
 }
 
 function syncDashboard(data,sourceText){
@@ -458,7 +463,7 @@ async function loadCases(){
   for(const record of records){
    const card=document.createElement('article');
    const title=document.createElement('h3');title.textContent=record.caseId;
-   const detail=document.createElement('p');detail.textContent=[record.customer||'Customer unknown',record.aircraftId||'Aircraft unknown',record.aircraftLocation||'Location unknown',record.priority||'Pending'].join(' · ');
+   const detail=document.createElement('p');detail.textContent=[record.customer||'Customer unknown',record.aircraftId||'Aircraft unknown',record.aircraftLocation||'Location unknown',record.priority||'Pending',record.status||'Open'].join(' · ');
    const notes=document.createElement('p');const shortNotes=(record.problemNotes||'').replace('[SYNTHETIC DEMO] ','');notes.textContent=record.problemNotes.length>=160?shortNotes.replace(/\s+\S*$/,'')+' …':shortNotes;
    const actions=document.createElement('div');actions.className='case-actions';
    const open=document.createElement('button');open.textContent=record.deletedAt?'Restore':'Open';

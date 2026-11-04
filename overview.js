@@ -57,7 +57,13 @@ const SYMPTOMS = [
 ];
 const EHM_SIGNALS = [['EGT',/\bEGT\b|exhaust gas temp/i],['Vibration',/vibrat/i],['Oil pressure',/oil[- ]pressure|öldruck/i],['Oil quantity',/oil (?:quantity|loss|leak|top-up|consumption)|ölstand/i],['Fuel flow',/fuel[- ]flow/i]];
 const PRIORITY_COLORS = {0:'#9A9A9A',1:'#D0302F',2:'#DE9E00',3:'#2E8B57',4:'#2F7FB0',5:'#2F7FB0'};
-const DECISION_LABELS = {'approve-plan':'Response plan approved','request-information':'Information requested','escalate-engineering':'Escalated to engineering','monitor-only':'Monitor only'};
+const DECISION_LABELS = {'approve-plan':'Support dispatched','request-information':'Information requested','escalate-engineering':'Escalated to engineering','monitor-only':'Remote guidance only'};
+const STATUS_FLOW=['In flight','On ground','Inspection','Repair','Closed'];
+const openCases=()=>allCases.filter(c=>c.status!=='Closed');
+const dayOf=v=>(String(v||'').match(/\d{4}-\d{2}-\d{2}/)||[])[0];
+const hoursBetween=(a,b)=>{const x=Date.parse(String(a).replace(' UTC','Z').replace(' ','T')),y=Date.parse(String(b).replace(' UTC','Z').replace(' ','T'));return isNaN(x)||isNaN(y)?null:(y-x)/36e5};
+const fmtHours=h=>h==null?'–':h<48?`${Math.round(h)} h`:`${(h/24).toFixed(1)} d`;
+function isReportable(c){return isShutdown(c)||mentions(c,/flame ?-?out|flamed? ?-?out|\bfire\b|smoke|rauch|uncontained|surge/i)}
 const hasLeaflet = typeof L !== 'undefined';
 
 let allCases = [];          // active cases from /api/cases (list view)
@@ -125,6 +131,7 @@ function similarCases(c){
   if(c.aircraftId&&o.aircraftId===c.aircraftId){score+=0.2;why.push('same aircraft')}
   if([o.engine1,o.engine2].some(e=>e&&engines.has(e))){score+=0.2;why.push('same engine')}
   if(c.aircraftLocation&&o.aircraftLocation===c.aircraftLocation)score+=0.05;
+  if(o.rootCause)score+=0.05;
   return {record:o,score:Math.min(score,0.99),why};
  }).filter(x=>x.score>=0.2).sort((a,b)=>b.score-a.score).slice(0,3);
 }
@@ -196,7 +203,7 @@ function renderOverviewMarkers(){
  if(!dashMap)return;
  mapLayers.case.clearLayers();
  const perLocation={};
- allCases.forEach(c=>{
+ openCases().forEach(c=>{
   const loc=locate(c.aircraftLocation);if(!loc)return;
   const n=perLocation[loc.iata]=(perLocation[loc.iata]||0)+1;
   // Spread several cases at the same airport on a small ring so each stays clickable.
@@ -222,22 +229,28 @@ function renderOverviewMarkers(){
 }
 function renderOverviewStats(){
  const counts={1:0,2:0,3:0,4:0,5:0,0:0};
- allCases.forEach(c=>counts[priorityLevel(c.priority)]++);
- const open=allCases.filter(c=>!c.decision);
- document.getElementById('statActive').textContent=allCases.length;
+ const active=openCases();
+ active.forEach(c=>counts[priorityLevel(c.priority)]++);
+ const open=active.filter(c=>!c.decision);
+ document.getElementById('statActive').textContent=active.length;
+ const ttd=allCases.map(c=>c.decidedAt&&hoursBetween(c.eventTime,c.decidedAt)).filter(h=>typeof h==='number'&&h>=0);
+ const aog=allCases.filter(c=>c.status==='Closed').map(c=>c.closedAt&&hoursBetween(c.eventTime,c.closedAt)).filter(h=>typeof h==='number'&&h>=0);
+ const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
+ document.getElementById('statTtd').textContent=fmtHours(avg(ttd));
+ document.getElementById('statAog').textContent=aog.length?`Avg. event to closure ${fmtHours(avg(aog))} · ${aog.length} closed`:'No closed cases yet';
  document.getElementById('statOpen').textContent=open.length;
  document.getElementById('priorityList').innerHTML=[1,2,3,4,5,0].map(p=>
   `<li><i class="dot p${p===5?4:p}"></i><b>${p||'–'}</b><em>${counts[p]} ${p?'':'pending '}case${counts[p]===1?'':'s'}</em></li>`).join('');
  const urgent=open.filter(c=>priorityLevel(c.priority)===1);
- const noLocation=allCases.filter(c=>!locate(c.aircraftLocation)).length;
- const incomplete=allCases.filter(c=>missingFieldsOf(c).length>0).length;
+ const noLocation=active.filter(c=>!locate(c.aircraftLocation)).length;
+ const incomplete=active.filter(c=>missingFieldsOf(c).length>0).length;
  const family={};allCases.forEach(c=>symptomsOf(c).forEach(s=>family[s.label]=(family[s.label]||0)+1));
  const top=Object.entries(family).sort((a,b)=>b[1]-a[1])[0];
  const list=urgent.slice(0,3).map(c=>`<a href="#" data-case="${escapeHtml(c.caseId)}">${escapeHtml(c.caseId.slice(-6))}</a>`).join(', ');
  if(!allCases.length){document.getElementById('recoList').innerHTML='<span>Recommendations</span><p class="muted">Recommendations appear once cases are saved.</p>';return}
  document.getElementById('recoList').innerHTML=`<span>Recommendations</span>
   <ul class="reco"><li>${urgent.length} priority-1 case${urgent.length===1?'':'s'} without expert decision${urgent.length?`: ${list}${urgent.length>3?' …':''}`:''}</li>
-  <li>${incomplete} case${incomplete===1?'':'s'} with missing intake information${noLocation?`, ${noLocation} without location`:''}</li>
+  <li>${incomplete} open case${incomplete===1?'':'s'} with missing intake information${noLocation?`, ${noLocation} without location`:''}</li>
   ${top?`<li>Most frequent symptom: ${escapeHtml(top[0])} in ${top[1]} cases. Check for a fleet pattern.</li>`:''}</ul>`;
  document.querySelectorAll('#recoList [data-case]').forEach(a=>a.onclick=e=>{e.preventDefault();openCaseInResponse(a.dataset.case)});
 }
@@ -303,11 +316,11 @@ function renderResponse(){
  const c=currentCase;
  const title=document.getElementById('respTitle'), meta=document.getElementById('respMeta'), pr=document.getElementById('respPriority');
  document.getElementById('decisionPanel').hidden=!c;
- if(!c){document.getElementById('respPriorityWhy').textContent='';pr.dataset.level='';title.textContent='No case selected';meta.textContent='Create a case in Intake or pick a marker on the Overview map.';pr.textContent='–';return}
+ if(!c){document.getElementById('statusSteps').innerHTML='';document.getElementById('respReport').hidden=true;document.getElementById('closeBox').hidden=true;document.getElementById('respPriorityWhy').textContent='';pr.dataset.level='';title.textContent='No case selected';meta.textContent='Create a case in Intake or pick a marker on the Overview map.';pr.textContent='–';return}
  const loc=locate(c.aircraftLocation), level=priorityLevel(c.priority), symptoms=symptomsOf(c), missing=missingFieldsOf(c), res=resourcesFor(c);
  title.textContent=`${c.caseId||'Unsaved case'} · ${c.customer||'Customer open'}`;
  meta.textContent=[c.aircraftId||'Aircraft open',[c.engine1,c.engine2].filter(Boolean).join(' / ')||'Engine numbers open',
-  loc?`on ground at ${loc.name} (${loc.iata})`:(c.aircraftLocation||'location open'),c.eventTime||'event time open'].join(' · ');
+  loc?`${c.status==='In flight'?'heading to':'at'} ${loc.name} (${loc.iata})`:(c.aircraftLocation||'location open'),c.eventTime||'event time open'].join(' · ');
  const facts=caseFacts(c);
  document.getElementById('respFacts').textContent=[facts.type&&`${facts.type} · ${facts.engine}`,facts.phase&&facts.phase!=='Not stated'&&`Phase: ${facts.phase}`,facts.ata&&`ATA ${facts.ata}`].filter(Boolean).join(' · ');
  pr.textContent=level?`P${level} ${c.priority.replace(/^\d\s*-\s*/,'')}`:'Priority pending';
@@ -315,6 +328,9 @@ function renderResponse(){
  const suggestion=suggestPriority(c); // app.js
  document.getElementById('respPriorityWhy').textContent=`System suggestion: ${suggestion.priority} — ${suggestion.reasons.join(' · ')}`+
   (c.priority&&c.priority!==suggestion.priority?` · recorded priority differs: ${c.priority}`:'');
+ renderStatus(c);
+ const report=document.getElementById('respReport');report.hidden=!isReportable(c);
+ if(!report.hidden){const due=hoursBetween('1970-01-01T00:00Z',c.eventTime);report.textContent=`Possibly reportable occurrence. Check the reporting obligation with the operator (e.g. occurrence report within 72 h under EU 376/2014)${due!=null?`, due ${new Date(due*36e5+72*36e5).toISOString().slice(0,16).replace('T',' ')} UTC`:''}. The team must verify this.`}
 
  document.getElementById('respEhm').innerHTML=EHM_SIGNALS.map(([name,re])=>{const bad=mentions(c,re);const off=!bad&&isShutdown(c)&&name!=='Oil quantity';return `<p><span>${name}</span>${ehmTrace(c,name,bad)}<span class="${bad?'red':'muted'}">${bad?'above limit':off?'engine off':'normal'}</span></p>`}).join('')+
   `<p class="hint">${isShutdown(c)?'Shutdown reported. ':''}Simulated traces, 30 min before to 5 min after the event, shaped by the report. Dashed line: alert limit. No live EHM feed in this prototype.</p>`;
@@ -324,7 +340,7 @@ function renderResponse(){
 
  const similar=similarCases(c);
  document.getElementById('respSimilar').innerHTML=similar.length?similar.map(s=>
-  `<p><a href="#" data-case="${escapeHtml(s.record.caseId)}">${escapeHtml(s.record.caseId)}</a> · ${Math.round(s.score*100)}%<br><small>${escapeHtml(s.why.join(' · '))}</small></p>`).join('')
+  `<p><a href="#" data-case="${escapeHtml(s.record.caseId)}">${escapeHtml(s.record.caseId)}</a> · ${Math.round(s.score*100)}%<br><small>${escapeHtml(s.why.join(' · '))}</small>${s.record.rootCause?`<br><small class="root">Root cause: ${escapeHtml(s.record.rootCause)}</small>`:''}</p>`).join('')
   :`<p>${allCases.length?'No similar saved case found.':'No saved cases to compare yet.'}</p>`;
  document.querySelectorAll('#respSimilar [data-case]').forEach(a=>a.onclick=e=>{e.preventDefault();openCaseInResponse(a.dataset.case)});
 
@@ -363,7 +379,7 @@ function renderRespMap(c,loc,res){
 }
 
 /* ---------- Case history (audit trail) ---------- */
-const HIST_LABELS={priority:'Priority',decision:'Decision',decisionBy:'Expert',assignedResources:'Resources',customer:'Customer',aircraftId:'Aircraft',aircraftLocation:'Location',engine1:'Engine 1',engine2:'Engine 2',eventTime:'Event time',requestedDepartureDate:'Departure',problemNotes:'Notes'};
+const HIST_LABELS={status:'Status',rootCause:'Root cause',priority:'Priority',decision:'Decision',decisionBy:'Expert',assignedResources:'Resources',customer:'Customer',aircraftId:'Aircraft',aircraftLocation:'Location',engine1:'Engine 1',engine2:'Engine 2',eventTime:'Event time',requestedDepartureDate:'Departure',problemNotes:'Notes'};
 async function renderHistory(c){
  const panel=document.getElementById('historyPanel'),list=document.getElementById('historyList');
  if(!c?.caseId){panel.hidden=true;return}
@@ -420,7 +436,7 @@ document.getElementById('saveDecision').onclick=async()=>{
  if(!decision){status.textContent='Choose a decision.';return}
  if(!decisionBy){status.textContent='Enter the name of the authorized expert.';return}
  const assignedResources=[...document.querySelectorAll('#respResources input:checked')].map(i=>i.value).join('; ');
- if(decision==='approve-plan'&&!assignedResources){status.textContent='Select at least one resource to approve a response plan.';return}
+ if(decision==='approve-plan'&&!assignedResources){status.textContent='Select at least one resource to dispatch support.';return}
  let note=document.getElementById('decisionNote').value.trim();
  if(decision==='request-information'&&!note)note='Follow-up sent:\n'+document.getElementById('followupText').value;
  const button=document.getElementById('saveDecision');button.disabled=true;status.textContent='Saving…';
@@ -434,6 +450,65 @@ document.getElementById('saveDecision').onclick=async()=>{
   status.textContent=`Decision recorded for ${currentCase.caseId}.`;
  }catch(error){status.textContent=`Decision not saved: ${error.message}`}
  finally{button.disabled=false}
+};
+
+/* ---------- Case lifecycle ---------- */
+async function putCase(changes){
+ currentCase=await caseRequest(`/${encodeURIComponent(currentCase.caseId)}`,'PUT',{...currentCase,...changes});
+ caseDirty=false;renderCase(currentCase);renderAlerts(currentCase);syncDashboard(currentCase,currentCase.originalText||'');
+ await refreshCases();renderResponse();
+}
+function renderStatus(c){
+ const now=STATUS_FLOW.indexOf(c.status||'On ground');
+ const box=document.getElementById('statusSteps');
+ box.innerHTML=STATUS_FLOW.map((s,i)=>`<button type="button" data-status="${s}" class="${i<now?'past':i===now?'now':''}" ${s==='Closed'||!c.caseId?'disabled':''}>${s}</button>`).join('');
+ box.querySelectorAll('[data-status]').forEach(b=>b.onclick=async()=>{
+  if(b.dataset.status===c.status)return;
+  try{await putCase({status:b.dataset.status})}catch(e){document.getElementById('decisionStatus').textContent=`Status not saved: ${e.message}`}
+ });
+ const close=document.getElementById('closeBox');close.hidden=!c.caseId;
+ document.getElementById('rootCause').value=c.rootCause||'';
+ document.getElementById('closeCase').textContent=c.status==='Closed'?'Update root cause':'Close case';
+ document.getElementById('closeStatus').textContent=c.status==='Closed'?`Closed ${c.closedAt?new Date(c.closedAt).toLocaleString('de-DE'):''} · root cause recorded`:'';
+}
+document.getElementById('closeCase').onclick=async()=>{
+ const st=document.getElementById('closeStatus'), rootCause=document.getElementById('rootCause').value.trim();
+ if(!currentCase?.caseId){st.textContent='Save the case first.';return}
+ if(!currentCase.decision){st.textContent='Record the expert decision before closing the case.';return}
+ if(!rootCause){st.textContent='Enter the confirmed root cause.';return}
+ try{await putCase({status:'Closed',rootCause,closedAt:currentCase.closedAt||new Date().toISOString()});document.getElementById('closeStatus').textContent=`Case ${currentCase.caseId} closed.`}
+ catch(e){st.textContent=`Not saved: ${e.message}`}
+};
+
+/* ---------- Duplicate detection ---------- */
+function findDuplicate(d){
+ if(!d.aircraftId)return null;
+ return openCases().find(o=>{
+  if(o.aircraftId!==d.aircraftId||o.caseId===d.caseId)return false;
+  const a=dayOf(o.eventTime),b=dayOf(d.eventTime);
+  return !a||!b||Math.abs(Date.parse(a)-Date.parse(b))<=864e5;
+ })||null;
+}
+async function mergeIntoCase(caseId){
+ const st=document.getElementById('saveStatus');
+ try{
+  const target=await caseRequest(`/${encodeURIComponent(caseId)}`), incoming=currentCase;
+  const merged={...target};
+  ['customer','aircraftLocation','eventTime','requestedDepartureDate','engine1','engine2'].forEach(k=>{if(!merged[k]&&incoming[k])merged[k]=incoming[k]});
+  merged.originalText=`${target.originalText||''}\n\n--- Message received ${new Date().toISOString().slice(0,16).replace('T',' ')} UTC (${incoming.source}) ---\n${incoming.originalText||''}`.trim();
+  if(incoming.problemNotes&&!(target.problemNotes||'').includes(incoming.problemNotes.slice(0,40)))merged.problemNotes=`${target.problemNotes}\nUpdate: ${incoming.problemNotes}`.slice(0,50000);
+  const saved=await caseRequest(`/${encodeURIComponent(caseId)}`,'PUT',merged);
+  duplicateOf=null;caseDirty=false;
+  await refreshCases();await openCaseInResponse(saved.caseId);
+  if(st)st.textContent=`Message added to ${saved.caseId}`;
+ }catch(e){if(st)st.textContent=`Not merged: ${e.message}`}
+}
+
+/* ---------- EHM alert (simulated) ---------- */
+document.getElementById('ehmAlert').onclick=()=>{
+ const t=new Date(),iso=t.toISOString().slice(0,16).replace('T',' ');
+ document.getElementById('sourceText').value=`EHM ALERT · automatic engine health message\nCustomer: Demo Atlantic Express\nAircraft ID: DEMO-AC-007\nEngine 2 Number: DEMO-ENG-00714\nEvent time: ${iso} UTC\nFlight phase: Cruise FL370\nAircraft location: en route to Frankfurt (FRA)\nParameter: N1 vibration 4.6 units, limit 4.0, exceeded for 95 s. EGT trend +18 °C over 10 flights.\nNo crew report received yet.`;
+ document.getElementById('sourceText').dispatchEvent(new Event('input'));
 };
 
 /* ---------- Hooks used by app.js ---------- */

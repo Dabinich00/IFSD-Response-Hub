@@ -6,7 +6,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23222'/%3E%3Crect x='8' y='8' width='16' height='16' fill='none' stroke='%23fff' stroke-width='2'/%3E%3Crect x='14' y='14' width='4' height='4' fill='%230653B6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <script src="vendor/leaflet/leaflet.js"></script>
-<link rel="stylesheet" href="styles.css?v=0.8">
+<link rel="stylesheet" href="styles.css?v=0.9">
 </head>
 <body>
 <div class="shell">
@@ -45,6 +45,7 @@
   <div class="kpi-strip">
     <div class="kpi"><span>Active cases</span><strong id="statActive">–</strong></div>
     <div class="kpi kpi-alert"><span>Awaiting expert decision</span><strong id="statOpen">–</strong></div>
+    <div class="kpi"><span>Event to decision (avg.)</span><strong id="statTtd">–</strong><small id="statAog"></small></div>
     <div class="kpi kpi-wide"><span>By priority</span><ul class="priority-list" id="priorityList"></ul></div>
     <div class="kpi kpi-reco" id="recoList"><span>Recommendations</span></div>
     <div class="kpi kpi-action"><button type="button" class="btn-primary" data-open="intake">Report new incident</button></div>
@@ -57,7 +58,8 @@
   </header>
   <div class="two">
     <article id="intakeInput" class="panel">
-      <div class="tabs" role="tablist"><button>Email / Text</button><button>Phone / Speech-to-Text</button></div>
+      <div class="tabs" role="tablist"><button>Email / Text</button><button>Phone / Speech-to-Text</button><button>EHM alert</button></div>
+      <div class="ehm-box" id="ehmBox" hidden><p>Engine health data arrives automatically from the aircraft, often before anyone calls. In this prototype the alert is simulated.</p><button type="button" id="ehmAlert" class="btn-secondary">Receive demo EHM alert</button></div>
       <section class="recorder" aria-labelledby="recorderTitle">
         <div class="recorder-heading">
           <div><strong id="recorderTitle">Record a call</strong><small>Transcribed on this computer with faster-whisper</small></div>
@@ -109,7 +111,7 @@ The customer requests the aircraft to depart again on {{TOMORROW}} at 08:00 UTC.
 
 <section id="response" class="view">
   <header class="view-head resp-head">
-    <div><h1 id="respTitle">No case selected</h1><p id="respMeta" class="resp-meta">Create a case in Intake or pick a marker on the overview map.</p><p id="respFacts" class="resp-meta"></p><p id="respPriorityWhy" class="resp-why"></p></div>
+    <div><h1 id="respTitle">No case selected</h1><p id="respMeta" class="resp-meta">Create a case in Intake or pick a marker on the overview map.</p><p id="respFacts" class="resp-meta"></p><p id="respPriorityWhy" class="resp-why"></p><div class="status-steps" id="statusSteps" aria-label="Case status"></div><p id="respReport" class="resp-report" hidden></p></div>
     <span class="annunciator" id="respPriority">–</span>
   </header>
   <div class="cards three">
@@ -132,16 +134,16 @@ The customer requests the aircraft to depart again on {{TOMORROW}} at 08:00 UTC.
   </div>
   <article class="decision" id="decisionPanel">
     <div class="decision-head">
-      <div><h2>Expert decision</h2><p>The system structures the data and makes suggestions. The safety-critical decision is taken and recorded by an authorized expert.</p></div>
+      <div><h2>Expert decision</h2><p>The system structures the data and makes suggestions. An authorized expert decides on the support Rolls-Royce provides. Return to service stays with the operator's maintenance organisation.</p></div>
       <span class="decision-state" id="decisionState">Awaiting expert</span>
     </div>
     <div class="decision-grid">
       <fieldset class="decision-options">
         <legend>Decision</legend>
-        <label><input type="radio" name="decision" value="approve-plan"><span><b>Approve response plan</b><small>Dispatch the selected resources</small></span></label>
+        <label><input type="radio" name="decision" value="approve-plan"><span><b>Dispatch support</b><small>Send the selected team and parts to the operator</small></span></label>
         <label><input type="radio" name="decision" value="request-information"><span><b>Request missing information</b><small>Send a follow-up before deciding</small></span></label>
-        <label><input type="radio" name="decision" value="escalate-engineering"><span><b>Escalate to engineering</b><small>Specialist review required</small></span></label>
-        <label><input type="radio" name="decision" value="monitor-only"><span><b>Monitor only</b><small>No dispatch for now</small></span></label>
+        <label><input type="radio" name="decision" value="escalate-engineering"><span><b>Escalate to engineering</b><small>Specialist review by engine engineering</small></span></label>
+        <label><input type="radio" name="decision" value="monitor-only"><span><b>Remote guidance only</b><small>Advise the operator remotely, no dispatch</small></span></label>
       </fieldset>
       <div class="decision-fields">
         <label>Authorized expert *<input id="decisionBy" placeholder="Name and role"></label>
@@ -153,6 +155,12 @@ The customer requests the aircraft to depart again on {{TOMORROW}} at 08:00 UTC.
         <button type="button" id="saveDecision" class="btn-primary">Record decision</button>
         <p id="decisionStatus" role="status" aria-live="polite"></p>
       </div>
+    </div>
+    <div class="close-case" id="closeBox">
+      <h3>Close case</h3>
+      <p class="hint">When the operator has returned the aircraft to service, record the confirmed root cause. It is shown for similar cases and used by the forecast.</p>
+      <div class="close-row"><label>Confirmed root cause<input id="rootCause" placeholder="e.g. Bearing seal wear, engine removed for shop visit"></label><button type="button" id="closeCase" class="btn-secondary">Close case</button></div>
+      <p id="closeStatus" role="status" aria-live="polite"></p>
     </div>
   </article>
   <article class="panel history" id="historyPanel" hidden>
@@ -251,7 +259,7 @@ The customer requests the aircraft to depart again on {{TOMORROW}} at 08:00 UTC.
 </main>
 </div>
 
-<script src="app.js?v=0.8"></script>
-<script src="overview.js?v=0.8"></script>
-<script src="forecast.js?v=0.8"></script>
+<script src="app.js?v=0.9"></script>
+<script src="overview.js?v=0.9"></script>
+<script src="forecast.js?v=0.9"></script>
 </body></html>

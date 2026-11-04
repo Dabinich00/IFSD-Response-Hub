@@ -1,4 +1,4 @@
-# Demo-Szenario & Präsentations-Skript (v0.8)
+# Demo-Szenario & Präsentations-Skript (v0.9)
 
 Ein durchgängiges Szenario, das **alle Funktionen des Prototyps von A bis Z** zeigt und
 gleichzeitig als Funktionstest dient. Dauer: ca. 5–6 Minuten.
@@ -20,7 +20,7 @@ python3 server.py
 ```
 
 Dann `http://127.0.0.1:8000` öffnen. Prüfen:
-- Overview zeigt **Active cases ≈ 50** und Marker auf der Karte.
+- Overview zeigt **Active cases ≈ 21** (offene Cases, 29 von 50 sind abgeschlossen) und Marker auf der Karte.
 - Die Karte läuft auch offline (gebündelte Weltkarte). Mit Internet erscheinen OpenStreetMap-Kacheln.
 - Optional Ollama starten (`ollama pull llama3.2`), dann zeigt der Intake *Local AI ready*.
 - Live-Transkription ist optional: der Intake-Text ist vorausgefüllt.
@@ -73,6 +73,12 @@ In der linken Leiste **Incident intake** klicken.
 Hello, this is the duty engineer from Demo Baltic Wings. Aircraft DEMO-AC-009, engine 1 serial DEMO-ENG-00017, flamed out during cruise this morning around 07:15 UTC, relight was not successful and they diverted to Copenhagen. We would like the aircraft back in service tomorrow.
 ```
 
+### Akt 1c · EHM-Alarm — bevor jemand anruft (≈ 40 Sek)
+| Aktion | Was man sagt | Erwartetes Ergebnis |
+|---|---|---|
+| Tab **EHM alert** → **Receive demo EHM alert** → **Create case** | „Oft meldet sich das Triebwerk selbst, noch im Flug." | Source *EHM Alert*, Status *In flight*, Vibration über Limit |
+| Danach Tab **Email / Text**, kurze Meldung zum selben Flugzeug (DEMO-AC-007) → **Create case** | „Kommt später ein Anruf zum selben Ereignis, erkennt das System das Duplikat." | Banner *Possible duplicate of IFSD-…* → **Add this message to …** hängt die Nachricht an den bestehenden Case (Nachrichtenverlauf im Originaltext) |
+
 ### Akt 2 · Response — Analyse & Ressourcen (≈ 90 Sek)
 **Analyse & assign resources** klicken.
 
@@ -91,8 +97,16 @@ Hello, this is the duty engineer from Demo Baltic Wings. Aircraft DEMO-AC-009, e
 |---|---|---|
 | **Record decision** ohne Auswahl | „Ohne Experte keine Entscheidung." | Hinweis „Choose a decision" |
 | **Request missing information** wählen | „Das System formuliert die Rückfrage." | Generierte Rückfrage-Mail mit den fehlenden Punkten, kopierbar |
-| Alternativ **Approve response plan**, 2 Ressourcen anhaken, Name eintragen | „Die Entscheidung trifft und dokumentiert der Mensch." | — |
-| **Record decision** | Nachvollziehbarkeit | Status-Pille *Response plan approved · Name · Zeit*, gespeichert in der DB (inkl. Historie) |
+| Alternativ **Dispatch support**, 2 Ressourcen anhaken, Name eintragen | „Rolls-Royce entscheidet über die Unterstützung. Die Freigabe des Flugzeugs (Return to Service) bleibt bei der Wartungsorganisation des Betreibers." | — |
+| **Record decision** | Nachvollziehbarkeit | Status-Pille *Support dispatched · Name · Zeit*, gespeichert in der DB (inkl. Historie) |
+
+### Akt 3b · Status & Abschluss (≈ 40 Sek)
+| Aktion | Was man sagt | Erwartetes Ergebnis |
+|---|---|---|
+| Statusleiste im Kopf: In flight → On ground → Inspection → Repair | „Jeder Case hat einen Lebenszyklus." | Status wird gespeichert und in der Historie gezeigt |
+| Hinweis *Possibly reportable occurrence* | „Bei Abschaltung, Feuer oder Flameout erinnert das System an die Meldepflicht (z. B. 72 h nach EU 376/2014). Das Team prüft das." | Frist ab Ereigniszeit |
+| **Close case** mit bestätigter Ursache | „Die Ursache fließt in ähnliche Fälle und den Forecast ein." | Status *Closed*; ähnliche Fälle zeigen *Root cause: …* |
+| Overview-Kachel **Event to decision** | „Wir messen, wie schnell entschieden wird und wie lange ein Flugzeug am Boden steht." | Ø Zeit bis Entscheidung, Ø Zeit bis Abschluss |
 
 ### Akt 4 · Zurück ins Lagebild & Dashboard (≈ 40 Sek)
 | Aktion | Was man sagt | Erwartetes Ergebnis |
