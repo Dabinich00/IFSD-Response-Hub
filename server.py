@@ -64,6 +64,12 @@ def get_model():
 class IFSDHandler(SimpleHTTPRequestHandler):
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, '.woff2': 'font/woff2', '.geojson': 'application/geo+json'}
 
+    def end_headers(self):
+        # Always revalidate static files so the browser never shows a stale version after an update.
+        if not any(b'Cache-Control' in line for line in getattr(self, '_headers_buffer', [])):
+            self.send_header('Cache-Control', 'no-cache')
+        super().end_headers()
+
     def send_head(self):
         # Serve only public assets; never expose the database, source or Git files.
         path = urlparse(self.path).path
