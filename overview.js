@@ -56,7 +56,7 @@ const SYMPTOMS = [
  {key:'flameout', label:'Flameout / relight', re:/flamed? ?-?out|relight|restart|loss of combustion/i, action:'Combustion & ignition check', parts:['Igniter plug set','Fuel nozzle']}
 ];
 const EHM_SIGNALS = [['EGT',/\bEGT\b|exhaust gas temp/i],['Vibration',/vibrat/i],['Oil pressure',/oil[- ]pressure|öldruck/i],['Oil quantity',/oil (?:quantity|loss|leak|top-up|consumption)|ölstand/i],['Fuel flow',/fuel[- ]flow/i]];
-const PRIORITY_COLORS = {0:'#8D9AA6',1:'#D23F3F',2:'#E3A008',3:'#2F9B68',4:'#2F86A8',5:'#2F86A8'};
+const PRIORITY_COLORS = {0:'#9A9A9A',1:'#D0302F',2:'#DE9E00',3:'#2E8B57',4:'#2F7FB0',5:'#2F7FB0'};
 const DECISION_LABELS = {'approve-plan':'Response plan approved','request-information':'Information requested','escalate-engineering':'Escalated to engineering','monitor-only':'Monitor only'};
 const hasLeaflet = typeof L !== 'undefined';
 
@@ -146,7 +146,7 @@ function baseMap(id,view,zoom){
   map.getContainer().classList.add('offline-map');
   try{
    const land=await landGeoJson();
-   L.geoJSON(land,{interactive:false,style:{color:'#B9C4CE',weight:.8,fillColor:'#F7F9FA',fillOpacity:1}}).addTo(map).bringToBack();
+   L.geoJSON(land,{interactive:false,style:{color:'#C9CFD4',weight:.7,fillColor:'#FAFAFA',fillOpacity:1}}).addTo(map).bringToBack();
    map.attributionControl.addAttribution('Offline map · Natural Earth');
   }catch{map.attributionControl.addAttribution('Offline – map background unavailable')}
  };
@@ -188,7 +188,7 @@ function renderOverviewMarkers(){
   const angle=n*2.4, radius=n===1?0:0.35+0.12*Math.floor(n/6);
   const level=priorityLevel(c.priority);
   const marker=L.circleMarker([loc.lat+radius*Math.sin(angle),loc.lng+radius*1.5*Math.cos(angle)],{
-   radius:level===1?9:7,color:c.decision?'#ffffff':'#0F1C2E',weight:c.decision?2.5:2,fillColor:PRIORITY_COLORS[level],fillOpacity:1
+   radius:level===1?9:7,color:c.decision?'#ffffff':'#262626',weight:c.decision?2.5:2,fillColor:PRIORITY_COLORS[level],fillOpacity:1
   });
   marker.bindPopup(`<div class="map-pop"><b>${escapeHtml(c.caseId)}</b>
    <span>${escapeHtml(c.customer||'Customer open')} · ${escapeHtml(c.aircraftId||'Aircraft open')}</span>
@@ -328,11 +328,11 @@ function renderRespMap(c,loc,res){
  respLayer.clearLayers();
  if(!loc){respMap.setView([50,-5],3);return}
  const pts=[[loc.lat,loc.lng]];
- L.circleMarker([loc.lat,loc.lng],{radius:10,color:'#0F1C2E',weight:3,fillColor:PRIORITY_COLORS[priorityLevel(c.priority)],fillOpacity:1})
+ L.circleMarker([loc.lat,loc.lng],{radius:10,color:'#262626',weight:3,fillColor:PRIORITY_COLORS[priorityLevel(c.priority)],fillOpacity:1})
   .bindPopup(`<b>${escapeHtml(c.aircraftId||'Aircraft')}</b><br>${escapeHtml(loc.name)} (${loc.iata})`).addTo(respLayer);
  res.filter(r=>r.lat!==null).forEach(r=>{
   L.marker([r.lat,r.lng],{icon:shapeIcon(r.type==='part'?'part':'team')}).bindPopup(`<b>${escapeHtml(r.name)}</b><br>${escapeHtml(r.detail)}<br>ETA ${escapeHtml(r.eta)}`).addTo(respLayer);
-  L.polyline([[r.lat,r.lng],[loc.lat,loc.lng]],{color:'#1B3A5C',weight:1.5,dashArray:'4 6'}).addTo(respLayer);
+  L.polyline([[r.lat,r.lng],[loc.lat,loc.lng]],{color:'#262626',weight:1.2,dashArray:'4 6'}).addTo(respLayer);
   pts.push([r.lat,r.lng]);
  });
  respMap.fitBounds(pts,{padding:[40,40],maxZoom:7});

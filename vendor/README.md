@@ -6,4 +6,4 @@ Served locally so the demo works without an internet connection.
 - `world-land-110m.geojson` – land outlines from Natural Earth 1:110m (public domain),
   converted from the `world-atlas@2.0.2` TopoJSON (ISC). Used as offline background
   when OpenStreetMap tiles cannot be loaded.
-- `fonts/` – IBM Plex Sans, Sans Condensed and Mono (SIL Open Font License, see `fonts/OFL.txt`)
+- `fonts/` – Hanken Grotesk and IBM Plex Mono (SIL Open Font License, see `fonts/OFL*.txt`)
