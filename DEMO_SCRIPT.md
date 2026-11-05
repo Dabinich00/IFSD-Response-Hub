@@ -105,7 +105,7 @@ Hello, this is the duty engineer from Demo Baltic Wings. Aircraft DEMO-AC-009, e
 |---|---|---|
 | Statusleiste im Kopf: In flight → On ground → Inspection → Repair | „Jeder Case hat einen Lebenszyklus." | Status wird gespeichert und in der Historie gezeigt |
 | Hinweis *Possibly reportable occurrence* | „Bei Abschaltung, Feuer oder Flameout erinnert das System an die Meldepflicht (z. B. 72 h nach EU 376/2014). Das Team prüft das." | Frist ab Ereigniszeit |
-| **Close case** mit bestätigter Ursache | „Die Ursache fließt in ähnliche Fälle und den Forecast ein." | Status *Closed*; ähnliche Fälle zeigen *Root cause: …* |
+| **Close case** mit bestätigter Ursache | „Die Ursache erscheint bei ähnlichen Fällen." | Status *Closed*; ähnliche Fälle zeigen *Root cause: …* |
 | Overview-Kachel **Event to decision** | „Wir messen, wie schnell entschieden wird und wie lange ein Flugzeug am Boden steht." | Ø Zeit bis Entscheidung, Ø Zeit bis Abschluss |
 
 ### Akt 4 · Zurück ins Lagebild & Dashboard (≈ 40 Sek)
@@ -115,16 +115,6 @@ Hello, this is the duty engineer from Demo Baltic Wings. Aircraft DEMO-AC-009, e
 | Marker anklicken → **Incident dashboard** | „Operative Einsatzsicht pro Case." | Kacheln mit Notes, Weather (Demo), Action, Field Service, Spare Parts, Aircraft |
 | **Open response & decision** | Rücksprung | Response-Screen desselben Cases |
 
-### Akt 5 · Forecast — Vorausschau (≈ 45 Sek, passt zu Folie 7)
-In der oberen Navigation **Forecast** klicken.
-
-| Aktion | Was man sagt | Erwartetes Ergebnis |
-|---|---|---|
-| Case volume | „Aus den gespeicherten Cases sehen wir die Last pro Monat." | Balken der letzten 6 Monate, Durchschnitt pro Monat |
-| Rising symptoms | „Welche Symptome nehmen zu?" | z. B. Smoke / odour 0 → 4 |
-| External signals | „Hier würden Wetter, Nachrichten und Social Media einfließen — im Prototyp simuliert." | 3 Demo-Signale, klar als *not connected* markiert |
-| Watch list | „Flugzeuge und Triebwerke mit wiederholten Ereignissen — Kandidaten für proaktive Inspektion." | Liste mit DEMO-AC-… / DEMO-ENG-…, **Latest case** öffnet den Case |
-| Prepare resources | „Wo sollten wir Teile vorab bereitstellen?" | Top-5 Standorte mit Teilevorschlag und Lager |
 
 ---
 
