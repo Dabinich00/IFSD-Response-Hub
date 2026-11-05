@@ -240,7 +240,7 @@ function renderOverviewStats(){
  document.getElementById('statAog').textContent=aog.length?`Avg. event to closure ${fmtHours(avg(aog))} · ${aog.length} closed`:'No closed cases yet';
  document.getElementById('statOpen').textContent=open.length;
  document.getElementById('priorityList').innerHTML=[1,2,3,4,5,0].map(p=>
-  `<li><i class="dot p${p===5?4:p}"></i><b>${p||'–'}</b><em>${counts[p]} ${p?'':'pending '}case${counts[p]===1?'':'s'}</em></li>`).join('');
+  `<li><i class="dot p${p===5?4:p}"></i><b>${p||'–'}</b><em>${counts[p]} ${p?`case${counts[p]===1?'':'s'}`:'pending'}</em></li>`).join('');
  const urgent=open.filter(c=>priorityLevel(c.priority)===1);
  const noLocation=active.filter(c=>!locate(c.aircraftLocation)).length;
  const incomplete=active.filter(c=>missingFieldsOf(c).length>0).length;

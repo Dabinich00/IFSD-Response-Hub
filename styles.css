@@ -121,10 +121,11 @@ input,select,textarea{font:inherit;color:var(--ink)}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip,.leaflet-bar,.leaflet-bar a{border-radius:0!important}
 .leaflet-popup-content-wrapper{box-shadow:0 8px 24px rgba(0,0,0,.14)}
 
-.kpi-strip{display:grid;grid-template-columns:.6fr .8fr .9fr 1.1fr 1.9fr auto;margin-top:24px;background:var(--bg-2)}
+.kpi-strip{display:grid;grid-template-columns:.6fr .8fr .9fr 1.25fr 1.75fr auto;margin-top:24px;background:var(--bg-2)}
 .kpi{padding:24px 28px;min-width:0}
 .kpi+.kpi{border-left:1px solid var(--bg-3)}
-.kpi>span{display:block;margin-bottom:10px;color:var(--muted);font-size:14px}
+.kpi>span{display:block;min-height:2.6em;margin-bottom:10px;color:var(--muted);font-size:14px;line-height:1.3}
+@media (min-width:1181px) and (max-width:1439px){.kpi>span{min-height:3.9em}}
 .kpi strong{font:300 52px/1 var(--sans);letter-spacing:-.02em}
 .kpi-alert>span::before{content:"";display:inline-block;width:8px;height:8px;margin-right:8px;background:var(--p2);vertical-align:1px}
 .priority-list{display:grid;grid-template-columns:repeat(2,auto);justify-content:start;gap:8px 20px;margin:0;padding:0;list-style:none;font-size:14px}
@@ -384,3 +385,5 @@ small.root{color:var(--accent)}
 .ehm-box p{margin:0;flex:1;min-width:220px}
 .recorder[hidden]{display:none}
 .ehm-box[hidden],.close-case[hidden],.resp-head .resp-report[hidden]{display:none}
+
+#statAog{display:block;margin-top:10px;color:var(--muted);font-size:13px;line-height:1.4}
